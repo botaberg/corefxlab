@@ -1,0 +1,64 @@
+﻿<#@ import namespace="System.Collections.Generic" #><#+
+struct TypeToParse
+{
+	internal string PrimitiveName;
+	internal string ClassName;
+	internal string ValueCalculationTypeName;
+}
+struct TryParseOverload
+{
+	internal string BufferParamsText;
+	internal string BytesConsumedParamText;
+	internal string LengthName;
+}
+void PrintSetOutParamsAndReturnFalseText(TypeToParse typeToParse, TryParseOverload tryParseOverload, int indents)
+{
+	// Each indent is four spaces
+	string indentString = new String(' ', indents * 4);
+	if (tryParseOverload.BytesConsumedParamText != "")
+	{
+#>
+<#=indentString#>bytesConsumed = 0;
+<#+
+	}
+#>
+<#=indentString#>value = default(<#=typeToParse.PrimitiveName#>);
+<#=indentString#>return false;
+<#+
+}
+void PrintSetOutParamsAndReturnTrueText(TypeToParse typeToParse, TryParseOverload tryParseOverload, bool usedFullLength, int indents)
+{
+	// Each indent is four spaces
+	string indentString = new String(' ', indents * 4);
+	string bytesConsumedSource;
+	if (usedFullLength)
+	{
+		bytesConsumedSource = tryParseOverload.LengthName;
+	}
+	else
+	{
+		bytesConsumedSource = "index";
+	}
+	if (tryParseOverload.BytesConsumedParamText != "")
+	{
+#>
+<#=indentString#>bytesConsumed = <#=bytesConsumedSource#>;
+<#+
+	}
+	if (typeToParse.PrimitiveName == typeToParse.ValueCalculationTypeName)
+	{
+#>
+<#=indentString#>value = parsedValue;
+<#+
+	}
+	else
+	{
+#>
+<#=indentString#>value = (<#=typeToParse.PrimitiveName#>)parsedValue;
+<#+
+	}
+#>
+<#=indentString#>return true;
+<#+
+}
+#>

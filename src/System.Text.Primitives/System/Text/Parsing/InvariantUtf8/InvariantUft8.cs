@@ -10,6 +10,10 @@ namespace System.Text
     {
         public static partial class InvariantUtf8
         {
+            const int ByteOverflowLength = 3;
+            const int ByteOverflowLengthHex = 2;
+            const int UInt16OverflowLength = 5;
+            const int UInt16OverflowLengthHex = 4;
             const int UInt32OverflowLength = 10;
             const int UInt32OverflowLengthHex = 8;
             const int UInt64OverflowLength = 20;
