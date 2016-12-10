@@ -18,170 +18,126 @@ namespace System.Text.Primitives.Tests
 		#region byte
 
 		[Theory]
-        [InlineData("55", true, 55)]
-        [InlineData("68abhced", true, 68)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("255", true, 255)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("256", false, 0)] // overflow test
-        public unsafe void ParseUtf8SpanToByte(string text, bool expectSuccess, byte expectedValue)
-        {
-            byte parsedValue;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseByte(span, out parsedValue);
-
-            Assert.Equal(expectSuccess, result);
-            Assert.Equal(expectedValue, parsedValue);
-        }
-
-		[Theory]
-        [InlineData("55", true, 55, 2)]
-        [InlineData("68abhced", true, 68, 2)]
+        [InlineData("111", true, 111, 3)]
+        [InlineData("49abhced", true, 49, 2)]
         [InlineData("0", true, 0, 1)] // min value
         [InlineData("255", true, 255, 3)] // max value
         [InlineData("I am 1", false, 0, 0)] // invalid character test
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
         [InlineData("256", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf8SpanToByteConsumed(string text, bool expectSuccess, byte expectedValue, int expectedBytesConsumed)
+        public unsafe void ParseByteInvariant(string text, bool expectSuccess, byte expectedValue, int expectedConsumed)
         {
             byte parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseByte(span, out parsedValue, out bytesConsumed);
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
+			result = PrimitiveParser.InvariantUtf8.TryParseByte(utf8Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
 
-		[Theory]
-        [InlineData("55", true, 55)]
-        [InlineData("68abhced", true, 68)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("255", true, 255)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("256", false, 0)] // overflow test
-        public unsafe void ParseUtf8ByteStarToByte(string text, bool expectSuccess, byte expectedValue)
-        {
-            byte parsedValue;
+            result = PrimitiveParser.InvariantUtf8.TryParseByte(utf8Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
 
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
+			fixed (byte* arrayPointer = textBytes)
             {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseByte(arrayPointer, textBytes.Length, out parsedValue);
+                result = PrimitiveParser.InvariantUtf8.TryParseByte(arrayPointer, textBytes.Length, out parsedValue);
 
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf8.TryParseByte(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
+            }
+
+			result = PrimitiveParser.InvariantUtf16.TryParseByte(utf16Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+
+			result = PrimitiveParser.InvariantUtf16.TryParseByte(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (char* arrayPointer = textChars)
+            {
+                result = PrimitiveParser.InvariantUtf16.TryParseByte(arrayPointer, textBytes.Length, out parsedValue);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf16.TryParseByte(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
 
 		[Theory]
-        [InlineData("55", true, 55, 2)]
-        [InlineData("68abhced", true, 68, 2)]
-        [InlineData("0", true, 0, 1)] // min value
-        [InlineData("255", true, 255, 3)] // max value
+        [InlineData("af", true, 0xaf, 2)]
+        [InlineData("7ghijzl", true, 0x7, 1)]
+        [InlineData("0", true, 0x0, 1)] // min value
+        [InlineData("FF", true, 0xFF, 2)] // max value
         [InlineData("I am 1", false, 0, 0)] // invalid character test
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("256", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf8ByteStarToByteConsumed(string text, bool expectSuccess, byte expectedValue, int expectedBytesConsumed)
+        [InlineData("100", false, 0, 0)] // overflow test
+        public unsafe void ParseByteInvariantHex(string text, bool expectSuccess, Byte expectedValue, int expectedConsumed)
         {
             byte parsedValue;
-            int bytesConsumed;
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
-            {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseByte(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
-
-                Assert.Equal(expectSuccess, result);
-                Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
-            }
-        }
-
-		[Theory]
-        [InlineData("55", true, 55)]
-        [InlineData("68abhced", true, 68)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("255", true, 255)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("256", false, 0)] // overflow test
-        public unsafe void ParseUtf16SpanToByte(string text, bool expectSuccess, byte expectedValue)
-        {
-            byte parsedValue;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseByte(span, out parsedValue);
-
+			result = PrimitiveParser.InvariantUtf8.Hex.TryParseByte(utf8Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-        }
 
-		[Theory]
-        [InlineData("55", true, 55, 2)]
-        [InlineData("68abhced", true, 68, 2)]
-        [InlineData("0", true, 0, 1)] // min value
-        [InlineData("255", true, 255, 3)] // max value
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("256", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf16SpanToByteConsumed(string text, bool expectSuccess, byte expectedValue, int expectedBytesConsumed)
-        {
-            byte parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseByte(span, out parsedValue, out bytesConsumed);
-
+            result = PrimitiveParser.InvariantUtf8.Hex.TryParseByte(utf8Span, out parsedValue, out consumed);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
+            Assert.Equal(expectedConsumed, consumed);
 
-		[Theory]
-        [InlineData("55", true, 55)]
-        [InlineData("68abhced", true, 68)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("255", true, 255)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("256", false, 0)] // overflow test
-        public unsafe void ParseUtf16ByteStarToByte(string text, bool expectSuccess, byte expectedValue)
-        {
-            byte parsedValue;
-
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			fixed (byte* arrayPointer = textBytes)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseByte(arrayPointer, textBytes.Length, out parsedValue);
+                result = PrimitiveParser.InvariantUtf8.Hex.TryParseByte(arrayPointer, textBytes.Length, out parsedValue);
 
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf8.Hex.TryParseByte(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
-        }
 
-		[Theory]
-        [InlineData("55", true, 55, 2)]
-        [InlineData("68abhced", true, 68, 2)]
-        [InlineData("0", true, 0, 1)] // min value
-        [InlineData("255", true, 255, 3)] // max value
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("256", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf16ByteStarToByteConsumed(string text, bool expectSuccess, byte expectedValue, int expectedBytesConsumed)
-        {
-            byte parsedValue;
-            int bytesConsumed;
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseByte(utf16Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
 
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseByte(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (char* arrayPointer = textChars)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseByte(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
-
+                result = PrimitiveParser.InvariantUtf16.Hex.TryParseByte(arrayPointer, textBytes.Length, out parsedValue);
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
+
+				result = PrimitiveParser.InvariantUtf16.Hex.TryParseByte(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
 
@@ -190,170 +146,126 @@ namespace System.Text.Primitives.Tests
 		#region ushort
 
 		[Theory]
-        [InlineData("5535", true, 5535)]
-        [InlineData("6836abhced", true, 6836)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("65535", true, 65535)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("65536", false, 0)] // overflow test
-        public unsafe void ParseUtf8SpanToUshort(string text, bool expectSuccess, ushort expectedValue)
-        {
-            ushort parsedValue;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseUInt16(span, out parsedValue);
-
-            Assert.Equal(expectSuccess, result);
-            Assert.Equal(expectedValue, parsedValue);
-        }
-
-		[Theory]
-        [InlineData("5535", true, 5535, 4)]
-        [InlineData("6836abhced", true, 6836, 4)]
+        [InlineData("111", true, 111, 3)]
+        [InlineData("4922abhced", true, 4922, 4)]
         [InlineData("0", true, 0, 1)] // min value
         [InlineData("65535", true, 65535, 5)] // max value
         [InlineData("I am 1", false, 0, 0)] // invalid character test
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
         [InlineData("65536", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf8SpanToUshortConsumed(string text, bool expectSuccess, ushort expectedValue, int expectedBytesConsumed)
+        public unsafe void ParseUInt16Invariant(string text, bool expectSuccess, ushort expectedValue, int expectedConsumed)
         {
             ushort parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseUInt16(span, out parsedValue, out bytesConsumed);
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
+			result = PrimitiveParser.InvariantUtf8.TryParseUInt16(utf8Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
 
-		[Theory]
-        [InlineData("5535", true, 5535)]
-        [InlineData("6836abhced", true, 6836)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("65535", true, 65535)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("65536", false, 0)] // overflow test
-        public unsafe void ParseUtf8ByteStarToUshort(string text, bool expectSuccess, ushort expectedValue)
-        {
-            ushort parsedValue;
+            result = PrimitiveParser.InvariantUtf8.TryParseUInt16(utf8Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
 
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
+			fixed (byte* arrayPointer = textBytes)
             {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseUInt16(arrayPointer, textBytes.Length, out parsedValue);
+                result = PrimitiveParser.InvariantUtf8.TryParseUInt16(arrayPointer, textBytes.Length, out parsedValue);
 
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf8.TryParseUInt16(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
+            }
+
+			result = PrimitiveParser.InvariantUtf16.TryParseUInt16(utf16Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+
+			result = PrimitiveParser.InvariantUtf16.TryParseUInt16(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (char* arrayPointer = textChars)
+            {
+                result = PrimitiveParser.InvariantUtf16.TryParseUInt16(arrayPointer, textBytes.Length, out parsedValue);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf16.TryParseUInt16(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
 
 		[Theory]
-        [InlineData("5535", true, 5535, 4)]
-        [InlineData("6836abhced", true, 6836, 4)]
-        [InlineData("0", true, 0, 1)] // min value
-        [InlineData("65535", true, 65535, 5)] // max value
+        [InlineData("af", true, 0xaf, 2)]
+        [InlineData("7F3ghijzl", true, 0x7F3, 3)]
+        [InlineData("0", true, 0x0, 1)] // min value
+        [InlineData("FFFF", true, 0xFFFF, 4)] // max value
         [InlineData("I am 1", false, 0, 0)] // invalid character test
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("65536", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf8ByteStarToUshortConsumed(string text, bool expectSuccess, ushort expectedValue, int expectedBytesConsumed)
+        [InlineData("10000", false, 0, 0)] // overflow test
+        public unsafe void ParseUInt16InvariantHex(string text, bool expectSuccess, UInt16 expectedValue, int expectedConsumed)
         {
             ushort parsedValue;
-            int bytesConsumed;
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
-            {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseUInt16(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
-
-                Assert.Equal(expectSuccess, result);
-                Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
-            }
-        }
-
-		[Theory]
-        [InlineData("5535", true, 5535)]
-        [InlineData("6836abhced", true, 6836)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("65535", true, 65535)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("65536", false, 0)] // overflow test
-        public unsafe void ParseUtf16SpanToUshort(string text, bool expectSuccess, ushort expectedValue)
-        {
-            ushort parsedValue;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseUInt16(span, out parsedValue);
-
+			result = PrimitiveParser.InvariantUtf8.Hex.TryParseUInt16(utf8Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-        }
 
-		[Theory]
-        [InlineData("5535", true, 5535, 4)]
-        [InlineData("6836abhced", true, 6836, 4)]
-        [InlineData("0", true, 0, 1)] // min value
-        [InlineData("65535", true, 65535, 5)] // max value
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("65536", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf16SpanToUshortConsumed(string text, bool expectSuccess, ushort expectedValue, int expectedBytesConsumed)
-        {
-            ushort parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseUInt16(span, out parsedValue, out bytesConsumed);
-
+            result = PrimitiveParser.InvariantUtf8.Hex.TryParseUInt16(utf8Span, out parsedValue, out consumed);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
+            Assert.Equal(expectedConsumed, consumed);
 
-		[Theory]
-        [InlineData("5535", true, 5535)]
-        [InlineData("6836abhced", true, 6836)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("65535", true, 65535)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("65536", false, 0)] // overflow test
-        public unsafe void ParseUtf16ByteStarToUshort(string text, bool expectSuccess, ushort expectedValue)
-        {
-            ushort parsedValue;
-
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			fixed (byte* arrayPointer = textBytes)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseUInt16(arrayPointer, textBytes.Length, out parsedValue);
+                result = PrimitiveParser.InvariantUtf8.Hex.TryParseUInt16(arrayPointer, textBytes.Length, out parsedValue);
 
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf8.Hex.TryParseUInt16(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
-        }
 
-		[Theory]
-        [InlineData("5535", true, 5535, 4)]
-        [InlineData("6836abhced", true, 6836, 4)]
-        [InlineData("0", true, 0, 1)] // min value
-        [InlineData("65535", true, 65535, 5)] // max value
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("65536", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf16ByteStarToUshortConsumed(string text, bool expectSuccess, ushort expectedValue, int expectedBytesConsumed)
-        {
-            ushort parsedValue;
-            int bytesConsumed;
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseUInt16(utf16Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
 
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseUInt16(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (char* arrayPointer = textChars)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseUInt16(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
-
+                result = PrimitiveParser.InvariantUtf16.Hex.TryParseUInt16(arrayPointer, textBytes.Length, out parsedValue);
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
+
+				result = PrimitiveParser.InvariantUtf16.Hex.TryParseUInt16(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
 
@@ -362,170 +274,126 @@ namespace System.Text.Primitives.Tests
 		#region uint
 
 		[Theory]
-        [InlineData("294967295", true, 294967295)]
-        [InlineData("354864498abhced", true, 354864498)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("4294967295", true, 4294967295)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("4294967296", false, 0)] // overflow test
-        public unsafe void ParseUtf8SpanToUint(string text, bool expectSuccess, uint expectedValue)
-        {
-            uint parsedValue;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseUInt32(span, out parsedValue);
-
-            Assert.Equal(expectSuccess, result);
-            Assert.Equal(expectedValue, parsedValue);
-        }
-
-		[Theory]
-        [InlineData("294967295", true, 294967295, 9)]
-        [InlineData("354864498abhced", true, 354864498, 9)]
+        [InlineData("111", true, 111, 3)]
+        [InlineData("492206507abhced", true, 492206507, 9)]
         [InlineData("0", true, 0, 1)] // min value
         [InlineData("4294967295", true, 4294967295, 10)] // max value
         [InlineData("I am 1", false, 0, 0)] // invalid character test
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
         [InlineData("4294967296", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf8SpanToUintConsumed(string text, bool expectSuccess, uint expectedValue, int expectedBytesConsumed)
+        public unsafe void ParseUInt32Invariant(string text, bool expectSuccess, uint expectedValue, int expectedConsumed)
         {
             uint parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseUInt32(span, out parsedValue, out bytesConsumed);
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
+			result = PrimitiveParser.InvariantUtf8.TryParseUInt32(utf8Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
 
-		[Theory]
-        [InlineData("294967295", true, 294967295)]
-        [InlineData("354864498abhced", true, 354864498)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("4294967295", true, 4294967295)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("4294967296", false, 0)] // overflow test
-        public unsafe void ParseUtf8ByteStarToUint(string text, bool expectSuccess, uint expectedValue)
-        {
-            uint parsedValue;
+            result = PrimitiveParser.InvariantUtf8.TryParseUInt32(utf8Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
 
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
+			fixed (byte* arrayPointer = textBytes)
             {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseUInt32(arrayPointer, textBytes.Length, out parsedValue);
+                result = PrimitiveParser.InvariantUtf8.TryParseUInt32(arrayPointer, textBytes.Length, out parsedValue);
 
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf8.TryParseUInt32(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
+            }
+
+			result = PrimitiveParser.InvariantUtf16.TryParseUInt32(utf16Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+
+			result = PrimitiveParser.InvariantUtf16.TryParseUInt32(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (char* arrayPointer = textChars)
+            {
+                result = PrimitiveParser.InvariantUtf16.TryParseUInt32(arrayPointer, textBytes.Length, out parsedValue);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf16.TryParseUInt32(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
 
 		[Theory]
-        [InlineData("294967295", true, 294967295, 9)]
-        [InlineData("354864498abhced", true, 354864498, 9)]
-        [InlineData("0", true, 0, 1)] // min value
-        [InlineData("4294967295", true, 4294967295, 10)] // max value
+        [InlineData("af", true, 0xaf, 2)]
+        [InlineData("7F34098ghijzl", true, 0x7F34098, 7)]
+        [InlineData("0", true, 0x0, 1)] // min value
+        [InlineData("FFFFFFFF", true, 0xFFFFFFFF, 8)] // max value
         [InlineData("I am 1", false, 0, 0)] // invalid character test
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("4294967296", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf8ByteStarToUintConsumed(string text, bool expectSuccess, uint expectedValue, int expectedBytesConsumed)
+        [InlineData("100000000", false, 0, 0)] // overflow test
+        public unsafe void ParseUInt32InvariantHex(string text, bool expectSuccess, UInt32 expectedValue, int expectedConsumed)
         {
             uint parsedValue;
-            int bytesConsumed;
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
-            {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseUInt32(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
-
-                Assert.Equal(expectSuccess, result);
-                Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
-            }
-        }
-
-		[Theory]
-        [InlineData("294967295", true, 294967295)]
-        [InlineData("354864498abhced", true, 354864498)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("4294967295", true, 4294967295)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("4294967296", false, 0)] // overflow test
-        public unsafe void ParseUtf16SpanToUint(string text, bool expectSuccess, uint expectedValue)
-        {
-            uint parsedValue;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseUInt32(span, out parsedValue);
-
+			result = PrimitiveParser.InvariantUtf8.Hex.TryParseUInt32(utf8Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-        }
 
-		[Theory]
-        [InlineData("294967295", true, 294967295, 9)]
-        [InlineData("354864498abhced", true, 354864498, 9)]
-        [InlineData("0", true, 0, 1)] // min value
-        [InlineData("4294967295", true, 4294967295, 10)] // max value
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("4294967296", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf16SpanToUintConsumed(string text, bool expectSuccess, uint expectedValue, int expectedBytesConsumed)
-        {
-            uint parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseUInt32(span, out parsedValue, out bytesConsumed);
-
+            result = PrimitiveParser.InvariantUtf8.Hex.TryParseUInt32(utf8Span, out parsedValue, out consumed);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
+            Assert.Equal(expectedConsumed, consumed);
 
-		[Theory]
-        [InlineData("294967295", true, 294967295)]
-        [InlineData("354864498abhced", true, 354864498)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("4294967295", true, 4294967295)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("4294967296", false, 0)] // overflow test
-        public unsafe void ParseUtf16ByteStarToUint(string text, bool expectSuccess, uint expectedValue)
-        {
-            uint parsedValue;
-
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			fixed (byte* arrayPointer = textBytes)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseUInt32(arrayPointer, textBytes.Length, out parsedValue);
+                result = PrimitiveParser.InvariantUtf8.Hex.TryParseUInt32(arrayPointer, textBytes.Length, out parsedValue);
 
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf8.Hex.TryParseUInt32(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
-        }
 
-		[Theory]
-        [InlineData("294967295", true, 294967295, 9)]
-        [InlineData("354864498abhced", true, 354864498, 9)]
-        [InlineData("0", true, 0, 1)] // min value
-        [InlineData("4294967295", true, 4294967295, 10)] // max value
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("4294967296", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf16ByteStarToUintConsumed(string text, bool expectSuccess, uint expectedValue, int expectedBytesConsumed)
-        {
-            uint parsedValue;
-            int bytesConsumed;
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseUInt32(utf16Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
 
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseUInt32(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (char* arrayPointer = textChars)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseUInt32(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
-
+                result = PrimitiveParser.InvariantUtf16.Hex.TryParseUInt32(arrayPointer, textBytes.Length, out parsedValue);
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
+
+				result = PrimitiveParser.InvariantUtf16.Hex.TryParseUInt32(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
 
@@ -534,170 +402,126 @@ namespace System.Text.Primitives.Tests
 		#region ulong
 
 		[Theory]
-        [InlineData("8446744073709551615", true, 8446744073709551615)]
-        [InlineData("6745766045317562215abhced", true, 6745766045317562215)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("18446744073709551615", true, 18446744073709551615)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("18446744073709551616", false, 0)] // overflow test
-        public unsafe void ParseUtf8SpanToUlong(string text, bool expectSuccess, ulong expectedValue)
-        {
-            ulong parsedValue;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseUInt64(span, out parsedValue);
-
-            Assert.Equal(expectSuccess, result);
-            Assert.Equal(expectedValue, parsedValue);
-        }
-
-		[Theory]
-        [InlineData("8446744073709551615", true, 8446744073709551615, 19)]
-        [InlineData("6745766045317562215abhced", true, 6745766045317562215, 19)]
+        [InlineData("111", true, 111, 3)]
+        [InlineData("4922065075844043901abhced", true, 4922065075844043901, 19)]
         [InlineData("0", true, 0, 1)] // min value
         [InlineData("18446744073709551615", true, 18446744073709551615, 20)] // max value
         [InlineData("I am 1", false, 0, 0)] // invalid character test
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
         [InlineData("18446744073709551616", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf8SpanToUlongConsumed(string text, bool expectSuccess, ulong expectedValue, int expectedBytesConsumed)
+        public unsafe void ParseUInt64Invariant(string text, bool expectSuccess, ulong expectedValue, int expectedConsumed)
         {
             ulong parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseUInt64(span, out parsedValue, out bytesConsumed);
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
+			result = PrimitiveParser.InvariantUtf8.TryParseUInt64(utf8Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
 
-		[Theory]
-        [InlineData("8446744073709551615", true, 8446744073709551615)]
-        [InlineData("6745766045317562215abhced", true, 6745766045317562215)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("18446744073709551615", true, 18446744073709551615)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("18446744073709551616", false, 0)] // overflow test
-        public unsafe void ParseUtf8ByteStarToUlong(string text, bool expectSuccess, ulong expectedValue)
-        {
-            ulong parsedValue;
+            result = PrimitiveParser.InvariantUtf8.TryParseUInt64(utf8Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
 
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
+			fixed (byte* arrayPointer = textBytes)
             {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseUInt64(arrayPointer, textBytes.Length, out parsedValue);
+                result = PrimitiveParser.InvariantUtf8.TryParseUInt64(arrayPointer, textBytes.Length, out parsedValue);
 
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf8.TryParseUInt64(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
+            }
+
+			result = PrimitiveParser.InvariantUtf16.TryParseUInt64(utf16Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+
+			result = PrimitiveParser.InvariantUtf16.TryParseUInt64(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (char* arrayPointer = textChars)
+            {
+                result = PrimitiveParser.InvariantUtf16.TryParseUInt64(arrayPointer, textBytes.Length, out parsedValue);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf16.TryParseUInt64(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
 
 		[Theory]
-        [InlineData("8446744073709551615", true, 8446744073709551615, 19)]
-        [InlineData("6745766045317562215abhced", true, 6745766045317562215, 19)]
-        [InlineData("0", true, 0, 1)] // min value
-        [InlineData("18446744073709551615", true, 18446744073709551615, 20)] // max value
+        [InlineData("af", true, 0xaf, 2)]
+        [InlineData("7F340980C8C6717ghijzl", true, 0x7F340980C8C6717, 15)]
+        [InlineData("0", true, 0x0, 1)] // min value
+        [InlineData("FFFFFFFFFFFFFFFF", true, 0xFFFFFFFFFFFFFFFF, 16)] // max value
         [InlineData("I am 1", false, 0, 0)] // invalid character test
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("18446744073709551616", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf8ByteStarToUlongConsumed(string text, bool expectSuccess, ulong expectedValue, int expectedBytesConsumed)
+        [InlineData("10000000000000000", false, 0, 0)] // overflow test
+        public unsafe void ParseUInt64InvariantHex(string text, bool expectSuccess, UInt64 expectedValue, int expectedConsumed)
         {
             ulong parsedValue;
-            int bytesConsumed;
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
-            {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseUInt64(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
-
-                Assert.Equal(expectSuccess, result);
-                Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
-            }
-        }
-
-		[Theory]
-        [InlineData("8446744073709551615", true, 8446744073709551615)]
-        [InlineData("6745766045317562215abhced", true, 6745766045317562215)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("18446744073709551615", true, 18446744073709551615)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("18446744073709551616", false, 0)] // overflow test
-        public unsafe void ParseUtf16SpanToUlong(string text, bool expectSuccess, ulong expectedValue)
-        {
-            ulong parsedValue;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseUInt64(span, out parsedValue);
-
+			result = PrimitiveParser.InvariantUtf8.Hex.TryParseUInt64(utf8Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-        }
 
-		[Theory]
-        [InlineData("8446744073709551615", true, 8446744073709551615, 19)]
-        [InlineData("6745766045317562215abhced", true, 6745766045317562215, 19)]
-        [InlineData("0", true, 0, 1)] // min value
-        [InlineData("18446744073709551615", true, 18446744073709551615, 20)] // max value
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("18446744073709551616", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf16SpanToUlongConsumed(string text, bool expectSuccess, ulong expectedValue, int expectedBytesConsumed)
-        {
-            ulong parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseUInt64(span, out parsedValue, out bytesConsumed);
-
+            result = PrimitiveParser.InvariantUtf8.Hex.TryParseUInt64(utf8Span, out parsedValue, out consumed);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
+            Assert.Equal(expectedConsumed, consumed);
 
-		[Theory]
-        [InlineData("8446744073709551615", true, 8446744073709551615)]
-        [InlineData("6745766045317562215abhced", true, 6745766045317562215)]
-        [InlineData("0", true, 0)] // min value
-        [InlineData("18446744073709551615", true, 18446744073709551615)] // max value
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("18446744073709551616", false, 0)] // overflow test
-        public unsafe void ParseUtf16ByteStarToUlong(string text, bool expectSuccess, ulong expectedValue)
-        {
-            ulong parsedValue;
-
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			fixed (byte* arrayPointer = textBytes)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseUInt64(arrayPointer, textBytes.Length, out parsedValue);
+                result = PrimitiveParser.InvariantUtf8.Hex.TryParseUInt64(arrayPointer, textBytes.Length, out parsedValue);
 
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf8.Hex.TryParseUInt64(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
-        }
 
-		[Theory]
-        [InlineData("8446744073709551615", true, 8446744073709551615, 19)]
-        [InlineData("6745766045317562215abhced", true, 6745766045317562215, 19)]
-        [InlineData("0", true, 0, 1)] // min value
-        [InlineData("18446744073709551615", true, 18446744073709551615, 20)] // max value
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("18446744073709551616", false, 0, 0)] // overflow test
-        public unsafe void ParseUtf16ByteStarToUlongConsumed(string text, bool expectSuccess, ulong expectedValue, int expectedBytesConsumed)
-        {
-            ulong parsedValue;
-            int bytesConsumed;
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseUInt64(utf16Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
 
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseUInt64(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (char* arrayPointer = textChars)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseUInt64(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
-
+                result = PrimitiveParser.InvariantUtf16.Hex.TryParseUInt64(arrayPointer, textBytes.Length, out parsedValue);
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
+
+				result = PrimitiveParser.InvariantUtf16.Hex.TryParseUInt64(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
 
@@ -707,27 +531,7 @@ namespace System.Text.Primitives.Tests
 
 		[Theory]
         [InlineData("111", true, 111, 3)]
-        [InlineData("53abcdefg", true, 53)]
-        [InlineData("127", true, 127)] // max
-        [InlineData("-128", true, -128)] // min
-        [InlineData("-A", false, 0,)] // invalid character after a sign
-        [InlineData("I am 1", false, 0,)] // invalid character test
-        [InlineData(" !", false, 0,)] // invalid character test w/ char < '0'
-        [InlineData("128", false, 0,)] // positive overflow test
-        [InlineData("-129", false, 0,)] // negative overflow test
-        public void ParseUtf8SpanToSbyte(string text, bool expectSuccess, sbyte expectedValue)
-        {
-            sbyte parsedValue;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseSByte(span, out parsedValue);
-
-            Assert.Equal(expectSuccess, result);
-            Assert.Equal(expectedValue, parsedValue);
-        }
-
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("53abcdefg", true, 53, 2)]
+        [InlineData("49abcdefg", true, 49, 2)]
         [InlineData("127", true, 127, 3)] // max
         [InlineData("-128", true, -128, 4)] // min
         [InlineData("-A", false, 0, 0)] // invalid character after a sign
@@ -735,185 +539,130 @@ namespace System.Text.Primitives.Tests
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
         [InlineData("128", false, 0, 0)] // positive overflow test
         [InlineData("-129", false, 0, 0)] // negative overflow test
-        public void ParseUtf8SpanToSbyteConsumed(string text, bool expectSuccess, sbyte expectedValue, int expectedBytesConsumed)
+        public unsafe void ParseSByteInvariant(string text, bool expectSuccess, sbyte expectedValue, int expectedConsumed)
         {
             sbyte parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseSByte(span, out parsedValue, out bytesConsumed);
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
+			result = PrimitiveParser.InvariantUtf8.TryParseSByte(utf8Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
 
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("53abcdefg", true, 53)]
-        [InlineData("127", true, 127)] // max
-        [InlineData("-128", true, -128)] // min
-        [InlineData("-A", false, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("128", false, 0)] // positive overflow test
-        [InlineData("-129", false, 0)] // negative overflow test
-        public unsafe void ParseUtf8ByteStarToSbyte(string text, bool expectSuccess, sbyte expectedValue)
-        {
-            sbyte parsedValue;
-
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
-            {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseSByte(arrayPointer, textBytes.Length, out parsedValue);
-
-                Assert.Equal(expectSuccess, result);
-                Assert.Equal(expectedValue, parsedValue);
-            }
-        }
-
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("53abcdefg", true, 53, 2)]
-        [InlineData("127", true, 127, 3)] // max
-        [InlineData("-128", true, -128, 4)] // min
-        [InlineData("-A", false, 0, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("128", false, 0, 0)] // positive overflow test
-        [InlineData("-129", false, 0, 0)] // negative overflow test
-        public unsafe void ParseUtf8ByteStarToSbyteConsumed(string text, bool expectSuccess, sbyte expectedValue, int expectedBytesConsumed)
-        {
-            sbyte parsedValue;
-            int bytesConsumed;
-
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
-            {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseSByte(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
-
-                Assert.Equal(expectSuccess, result);
-                Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
-            }
-        }
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("53abcdefg", true, 53)]
-        [InlineData("127", true, 127)] // max
-        [InlineData("-128", true, -128)] // min
-        [InlineData("-A", false, 0,)] // invalid character after a sign
-        [InlineData("I am 1", false, 0,)] // invalid character test
-        [InlineData(" !", false, 0,)] // invalid character test w/ char < '0'
-        [InlineData("128", false, 0,)] // positive overflow test
-        [InlineData("-129", false, 0,)] // negative overflow test
-        public void ParseUtf16SpanToSbyte(string text, bool expectSuccess, sbyte expectedValue)
-        {
-            sbyte parsedValue;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseSByte(span, out parsedValue);
-
+            result = PrimitiveParser.InvariantUtf8.TryParseSByte(utf8Span, out parsedValue, out consumed);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-        }
+            Assert.Equal(expectedConsumed, consumed);
 
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("53abcdefg", true, 53, 2)]
-        [InlineData("127", true, 127, 3)] // max
-        [InlineData("-128", true, -128, 4)] // min
-        [InlineData("-A", false, 0, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("128", false, 0, 0)] // positive overflow test
-        [InlineData("-129", false, 0, 0)] // negative overflow test
-        public void ParseUtf16SpanToSbyteConsumed(string text, bool expectSuccess, sbyte expectedValue, int expectedBytesConsumed)
-        {
-            sbyte parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseSByte(span, out parsedValue, out bytesConsumed);
+			fixed (byte* arrayPointer = textBytes)
+            {
+                result = PrimitiveParser.InvariantUtf8.TryParseSByte(arrayPointer, textBytes.Length, out parsedValue);
 
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf8.TryParseSByte(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
+            }
+
+			result = PrimitiveParser.InvariantUtf16.TryParseSByte(utf16Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
 
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("53abcdefg", true, 53)]
-        [InlineData("127", true, 127)] // max
-        [InlineData("-128", true, -128)] // min
-        [InlineData("-A", false, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("128", false, 0)] // positive overflow test
-        [InlineData("-129", false, 0)] // negative overflow test
-        public unsafe void ParseUtf16ByteStarToSbyte(string text, bool expectSuccess, sbyte expectedValue)
-        {
-            sbyte parsedValue;
+			result = PrimitiveParser.InvariantUtf16.TryParseSByte(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
 
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			fixed (char* arrayPointer = textChars)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseSByte(arrayPointer, textBytes.Length, out parsedValue);
-
+                result = PrimitiveParser.InvariantUtf16.TryParseSByte(arrayPointer, textBytes.Length, out parsedValue);
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf16.TryParseSByte(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
 
 		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("53abcdefg", true, 53, 2)]
-        [InlineData("127", true, 127, 3)] // max
-        [InlineData("-128", true, -128, 4)] // min
-        [InlineData("-A", false, 0, 0)] // invalid character after a sign
+        [InlineData("1f", true, 0x1f, 2)]
+        [InlineData("7ghijzl", true, 0x7, 1)]
+        [InlineData("7F", true, 0x7F, 2)] // positive max
+        [InlineData("80", true, -0x80, 2)] // negative min
+        [InlineData("-G", false, 0, 0)] // invalid character after a sign
         [InlineData("I am 1", false, 0, 0)] // invalid character test
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("128", false, 0, 0)] // positive overflow test
-        [InlineData("-129", false, 0, 0)] // negative overflow test
-        public unsafe void ParseUtf16ByteStarToSbyteConsumed(string text, bool expectSuccess, sbyte expectedValue, int expectedBytesConsumed)
+        [InlineData("100", false, 0, 0)] // overflow test
+        public unsafe void ParseSByteInvariantHex(string text, bool expectSuccess, sbyte expectedValue, int expectedConsumed)
         {
             sbyte parsedValue;
-            int bytesConsumed;
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			result = PrimitiveParser.InvariantUtf8.Hex.TryParseSByte(utf8Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+
+            result = PrimitiveParser.InvariantUtf8.Hex.TryParseSByte(utf8Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (byte* arrayPointer = textBytes)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseSByte(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
+                result = PrimitiveParser.InvariantUtf8.Hex.TryParseSByte(arrayPointer, textBytes.Length, out parsedValue);
 
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
+
+				result = PrimitiveParser.InvariantUtf8.Hex.TryParseSByte(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
+            }
+
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseSByte(utf16Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseSByte(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (char* arrayPointer = textChars)
+            {
+                result = PrimitiveParser.InvariantUtf16.Hex.TryParseSByte(arrayPointer, textBytes.Length, out parsedValue);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf16.Hex.TryParseSByte(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
+
 		#endregion
 
 		#region short
 
 		[Theory]
         [InlineData("111", true, 111, 3)]
-        [InlineData("5333abcdefg", true, 5333)]
-        [InlineData("32767", true, 32767)] // max
-        [InlineData("-32768", true, -32768)] // min
-        [InlineData("-A", false, 0,)] // invalid character after a sign
-        [InlineData("I am 1", false, 0,)] // invalid character test
-        [InlineData(" !", false, 0,)] // invalid character test w/ char < '0'
-        [InlineData("32768", false, 0,)] // positive overflow test
-        [InlineData("-32769", false, 0,)] // negative overflow test
-        public void ParseUtf8SpanToShort(string text, bool expectSuccess, short expectedValue)
-        {
-            short parsedValue;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseInt16(span, out parsedValue);
-
-            Assert.Equal(expectSuccess, result);
-            Assert.Equal(expectedValue, parsedValue);
-        }
-
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("5333abcdefg", true, 5333, 4)]
+        [InlineData("4922abcdefg", true, 4922, 4)]
         [InlineData("32767", true, 32767, 5)] // max
         [InlineData("-32768", true, -32768, 6)] // min
         [InlineData("-A", false, 0, 0)] // invalid character after a sign
@@ -921,185 +670,130 @@ namespace System.Text.Primitives.Tests
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
         [InlineData("32768", false, 0, 0)] // positive overflow test
         [InlineData("-32769", false, 0, 0)] // negative overflow test
-        public void ParseUtf8SpanToShortConsumed(string text, bool expectSuccess, short expectedValue, int expectedBytesConsumed)
+        public unsafe void ParseInt16Invariant(string text, bool expectSuccess, short expectedValue, int expectedConsumed)
         {
             short parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseInt16(span, out parsedValue, out bytesConsumed);
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
+			result = PrimitiveParser.InvariantUtf8.TryParseInt16(utf8Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
 
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("5333abcdefg", true, 5333)]
-        [InlineData("32767", true, 32767)] // max
-        [InlineData("-32768", true, -32768)] // min
-        [InlineData("-A", false, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("32768", false, 0)] // positive overflow test
-        [InlineData("-32769", false, 0)] // negative overflow test
-        public unsafe void ParseUtf8ByteStarToShort(string text, bool expectSuccess, short expectedValue)
-        {
-            short parsedValue;
-
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
-            {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseInt16(arrayPointer, textBytes.Length, out parsedValue);
-
-                Assert.Equal(expectSuccess, result);
-                Assert.Equal(expectedValue, parsedValue);
-            }
-        }
-
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("5333abcdefg", true, 5333, 4)]
-        [InlineData("32767", true, 32767, 5)] // max
-        [InlineData("-32768", true, -32768, 6)] // min
-        [InlineData("-A", false, 0, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("32768", false, 0, 0)] // positive overflow test
-        [InlineData("-32769", false, 0, 0)] // negative overflow test
-        public unsafe void ParseUtf8ByteStarToShortConsumed(string text, bool expectSuccess, short expectedValue, int expectedBytesConsumed)
-        {
-            short parsedValue;
-            int bytesConsumed;
-
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
-            {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseInt16(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
-
-                Assert.Equal(expectSuccess, result);
-                Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
-            }
-        }
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("5333abcdefg", true, 5333)]
-        [InlineData("32767", true, 32767)] // max
-        [InlineData("-32768", true, -32768)] // min
-        [InlineData("-A", false, 0,)] // invalid character after a sign
-        [InlineData("I am 1", false, 0,)] // invalid character test
-        [InlineData(" !", false, 0,)] // invalid character test w/ char < '0'
-        [InlineData("32768", false, 0,)] // positive overflow test
-        [InlineData("-32769", false, 0,)] // negative overflow test
-        public void ParseUtf16SpanToShort(string text, bool expectSuccess, short expectedValue)
-        {
-            short parsedValue;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseInt16(span, out parsedValue);
-
+            result = PrimitiveParser.InvariantUtf8.TryParseInt16(utf8Span, out parsedValue, out consumed);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-        }
+            Assert.Equal(expectedConsumed, consumed);
 
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("5333abcdefg", true, 5333, 4)]
-        [InlineData("32767", true, 32767, 5)] // max
-        [InlineData("-32768", true, -32768, 6)] // min
-        [InlineData("-A", false, 0, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("32768", false, 0, 0)] // positive overflow test
-        [InlineData("-32769", false, 0, 0)] // negative overflow test
-        public void ParseUtf16SpanToShortConsumed(string text, bool expectSuccess, short expectedValue, int expectedBytesConsumed)
-        {
-            short parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseInt16(span, out parsedValue, out bytesConsumed);
+			fixed (byte* arrayPointer = textBytes)
+            {
+                result = PrimitiveParser.InvariantUtf8.TryParseInt16(arrayPointer, textBytes.Length, out parsedValue);
 
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf8.TryParseInt16(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
+            }
+
+			result = PrimitiveParser.InvariantUtf16.TryParseInt16(utf16Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
 
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("5333abcdefg", true, 5333)]
-        [InlineData("32767", true, 32767)] // max
-        [InlineData("-32768", true, -32768)] // min
-        [InlineData("-A", false, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("32768", false, 0)] // positive overflow test
-        [InlineData("-32769", false, 0)] // negative overflow test
-        public unsafe void ParseUtf16ByteStarToShort(string text, bool expectSuccess, short expectedValue)
-        {
-            short parsedValue;
+			result = PrimitiveParser.InvariantUtf16.TryParseInt16(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
 
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			fixed (char* arrayPointer = textChars)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseInt16(arrayPointer, textBytes.Length, out parsedValue);
-
+                result = PrimitiveParser.InvariantUtf16.TryParseInt16(arrayPointer, textBytes.Length, out parsedValue);
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf16.TryParseInt16(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
 
 		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("5333abcdefg", true, 5333, 4)]
-        [InlineData("32767", true, 32767, 5)] // max
-        [InlineData("-32768", true, -32768, 6)] // min
-        [InlineData("-A", false, 0, 0)] // invalid character after a sign
+        [InlineData("1f", true, 0x1f, 2)]
+        [InlineData("7F3ghijzl", true, 0x7F3, 3)]
+        [InlineData("7FFF", true, 0x7FFF, 4)] // positive max
+        [InlineData("8000", true, -0x8000, 4)] // negative min
+        [InlineData("-G", false, 0, 0)] // invalid character after a sign
         [InlineData("I am 1", false, 0, 0)] // invalid character test
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("32768", false, 0, 0)] // positive overflow test
-        [InlineData("-32769", false, 0, 0)] // negative overflow test
-        public unsafe void ParseUtf16ByteStarToShortConsumed(string text, bool expectSuccess, short expectedValue, int expectedBytesConsumed)
+        [InlineData("10000", false, 0, 0)] // overflow test
+        public unsafe void ParseInt16InvariantHex(string text, bool expectSuccess, short expectedValue, int expectedConsumed)
         {
             short parsedValue;
-            int bytesConsumed;
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			result = PrimitiveParser.InvariantUtf8.Hex.TryParseInt16(utf8Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+
+            result = PrimitiveParser.InvariantUtf8.Hex.TryParseInt16(utf8Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (byte* arrayPointer = textBytes)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseInt16(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
+                result = PrimitiveParser.InvariantUtf8.Hex.TryParseInt16(arrayPointer, textBytes.Length, out parsedValue);
 
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
+
+				result = PrimitiveParser.InvariantUtf8.Hex.TryParseInt16(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
+            }
+
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseInt16(utf16Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseInt16(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (char* arrayPointer = textChars)
+            {
+                result = PrimitiveParser.InvariantUtf16.Hex.TryParseInt16(arrayPointer, textBytes.Length, out parsedValue);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf16.Hex.TryParseInt16(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
+
 		#endregion
 
 		#region int
 
 		[Theory]
         [InlineData("111", true, 111, 3)]
-        [InlineData("474753647abcdefg", true, 474753647)]
-        [InlineData("2147483647", true, 2147483647)] // max
-        [InlineData("-2147483648", true, -2147483648)] // min
-        [InlineData("-A", false, 0,)] // invalid character after a sign
-        [InlineData("I am 1", false, 0,)] // invalid character test
-        [InlineData(" !", false, 0,)] // invalid character test w/ char < '0'
-        [InlineData("2147483648", false, 0,)] // positive overflow test
-        [InlineData("-2147483649", false, 0,)] // negative overflow test
-        public void ParseUtf8SpanToInt(string text, bool expectSuccess, int expectedValue)
-        {
-            int parsedValue;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseInt32(span, out parsedValue);
-
-            Assert.Equal(expectSuccess, result);
-            Assert.Equal(expectedValue, parsedValue);
-        }
-
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("474753647abcdefg", true, 474753647, 9)]
+        [InlineData("492206507abcdefg", true, 492206507, 9)]
         [InlineData("2147483647", true, 2147483647, 10)] // max
         [InlineData("-2147483648", true, -2147483648, 11)] // min
         [InlineData("-A", false, 0, 0)] // invalid character after a sign
@@ -1107,185 +801,130 @@ namespace System.Text.Primitives.Tests
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
         [InlineData("2147483648", false, 0, 0)] // positive overflow test
         [InlineData("-2147483649", false, 0, 0)] // negative overflow test
-        public void ParseUtf8SpanToIntConsumed(string text, bool expectSuccess, int expectedValue, int expectedBytesConsumed)
+        public unsafe void ParseInt32Invariant(string text, bool expectSuccess, int expectedValue, int expectedConsumed)
         {
             int parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseInt32(span, out parsedValue, out bytesConsumed);
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
+			result = PrimitiveParser.InvariantUtf8.TryParseInt32(utf8Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
 
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("474753647abcdefg", true, 474753647)]
-        [InlineData("2147483647", true, 2147483647)] // max
-        [InlineData("-2147483648", true, -2147483648)] // min
-        [InlineData("-A", false, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("2147483648", false, 0)] // positive overflow test
-        [InlineData("-2147483649", false, 0)] // negative overflow test
-        public unsafe void ParseUtf8ByteStarToInt(string text, bool expectSuccess, int expectedValue)
-        {
-            int parsedValue;
-
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
-            {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseInt32(arrayPointer, textBytes.Length, out parsedValue);
-
-                Assert.Equal(expectSuccess, result);
-                Assert.Equal(expectedValue, parsedValue);
-            }
-        }
-
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("474753647abcdefg", true, 474753647, 9)]
-        [InlineData("2147483647", true, 2147483647, 10)] // max
-        [InlineData("-2147483648", true, -2147483648, 11)] // min
-        [InlineData("-A", false, 0, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("2147483648", false, 0, 0)] // positive overflow test
-        [InlineData("-2147483649", false, 0, 0)] // negative overflow test
-        public unsafe void ParseUtf8ByteStarToIntConsumed(string text, bool expectSuccess, int expectedValue, int expectedBytesConsumed)
-        {
-            int parsedValue;
-            int bytesConsumed;
-
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
-            {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseInt32(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
-
-                Assert.Equal(expectSuccess, result);
-                Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
-            }
-        }
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("474753647abcdefg", true, 474753647)]
-        [InlineData("2147483647", true, 2147483647)] // max
-        [InlineData("-2147483648", true, -2147483648)] // min
-        [InlineData("-A", false, 0,)] // invalid character after a sign
-        [InlineData("I am 1", false, 0,)] // invalid character test
-        [InlineData(" !", false, 0,)] // invalid character test w/ char < '0'
-        [InlineData("2147483648", false, 0,)] // positive overflow test
-        [InlineData("-2147483649", false, 0,)] // negative overflow test
-        public void ParseUtf16SpanToInt(string text, bool expectSuccess, int expectedValue)
-        {
-            int parsedValue;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseInt32(span, out parsedValue);
-
+            result = PrimitiveParser.InvariantUtf8.TryParseInt32(utf8Span, out parsedValue, out consumed);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-        }
+            Assert.Equal(expectedConsumed, consumed);
 
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("474753647abcdefg", true, 474753647, 9)]
-        [InlineData("2147483647", true, 2147483647, 10)] // max
-        [InlineData("-2147483648", true, -2147483648, 11)] // min
-        [InlineData("-A", false, 0, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("2147483648", false, 0, 0)] // positive overflow test
-        [InlineData("-2147483649", false, 0, 0)] // negative overflow test
-        public void ParseUtf16SpanToIntConsumed(string text, bool expectSuccess, int expectedValue, int expectedBytesConsumed)
-        {
-            int parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseInt32(span, out parsedValue, out bytesConsumed);
+			fixed (byte* arrayPointer = textBytes)
+            {
+                result = PrimitiveParser.InvariantUtf8.TryParseInt32(arrayPointer, textBytes.Length, out parsedValue);
 
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf8.TryParseInt32(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
+            }
+
+			result = PrimitiveParser.InvariantUtf16.TryParseInt32(utf16Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
 
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("474753647abcdefg", true, 474753647)]
-        [InlineData("2147483647", true, 2147483647)] // max
-        [InlineData("-2147483648", true, -2147483648)] // min
-        [InlineData("-A", false, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("2147483648", false, 0)] // positive overflow test
-        [InlineData("-2147483649", false, 0)] // negative overflow test
-        public unsafe void ParseUtf16ByteStarToInt(string text, bool expectSuccess, int expectedValue)
-        {
-            int parsedValue;
+			result = PrimitiveParser.InvariantUtf16.TryParseInt32(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
 
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			fixed (char* arrayPointer = textChars)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseInt32(arrayPointer, textBytes.Length, out parsedValue);
-
+                result = PrimitiveParser.InvariantUtf16.TryParseInt32(arrayPointer, textBytes.Length, out parsedValue);
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf16.TryParseInt32(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
 
 		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("474753647abcdefg", true, 474753647, 9)]
-        [InlineData("2147483647", true, 2147483647, 10)] // max
-        [InlineData("-2147483648", true, -2147483648, 11)] // min
-        [InlineData("-A", false, 0, 0)] // invalid character after a sign
+        [InlineData("1f", true, 0x1f, 2)]
+        [InlineData("7F34098ghijzl", true, 0x7F34098, 7)]
+        [InlineData("7FFFFFFF", true, 0x7FFFFFFF, 8)] // positive max
+        [InlineData("80000000", true, -0x80000000, 8)] // negative min
+        [InlineData("-G", false, 0, 0)] // invalid character after a sign
         [InlineData("I am 1", false, 0, 0)] // invalid character test
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("2147483648", false, 0, 0)] // positive overflow test
-        [InlineData("-2147483649", false, 0, 0)] // negative overflow test
-        public unsafe void ParseUtf16ByteStarToIntConsumed(string text, bool expectSuccess, int expectedValue, int expectedBytesConsumed)
+        [InlineData("100000000", false, 0, 0)] // overflow test
+        public unsafe void ParseInt32InvariantHex(string text, bool expectSuccess, int expectedValue, int expectedConsumed)
         {
             int parsedValue;
-            int bytesConsumed;
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			result = PrimitiveParser.InvariantUtf8.Hex.TryParseInt32(utf8Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+
+            result = PrimitiveParser.InvariantUtf8.Hex.TryParseInt32(utf8Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (byte* arrayPointer = textBytes)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseInt32(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
+                result = PrimitiveParser.InvariantUtf8.Hex.TryParseInt32(arrayPointer, textBytes.Length, out parsedValue);
 
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
+
+				result = PrimitiveParser.InvariantUtf8.Hex.TryParseInt32(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
+            }
+
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseInt32(utf16Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseInt32(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (char* arrayPointer = textChars)
+            {
+                result = PrimitiveParser.InvariantUtf16.Hex.TryParseInt32(arrayPointer, textBytes.Length, out parsedValue);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf16.Hex.TryParseInt32(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
+
 		#endregion
 
 		#region long
 
 		[Theory]
         [InlineData("111", true, 111, 3)]
-        [InlineData("555642036585755426abcdefg", true, 555642036585755426)]
-        [InlineData("9223372036854775807", true, 9223372036854775807)] // max
-        [InlineData("-9223372036854775808", true, -9223372036854775808)] // min
-        [InlineData("-A", false, 0,)] // invalid character after a sign
-        [InlineData("I am 1", false, 0,)] // invalid character test
-        [InlineData(" !", false, 0,)] // invalid character test w/ char < '0'
-        [InlineData("9223372036854775808", false, 0,)] // positive overflow test
-        [InlineData("-9223372036854775809", false, 0,)] // negative overflow test
-        public void ParseUtf8SpanToLong(string text, bool expectSuccess, long expectedValue)
-        {
-            long parsedValue;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseInt64(span, out parsedValue);
-
-            Assert.Equal(expectSuccess, result);
-            Assert.Equal(expectedValue, parsedValue);
-        }
-
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("555642036585755426abcdefg", true, 555642036585755426, 18)]
+        [InlineData("492206507584404390abcdefg", true, 492206507584404390, 18)]
         [InlineData("9223372036854775807", true, 9223372036854775807, 19)] // max
         [InlineData("-9223372036854775808", true, -9223372036854775808, 20)] // min
         [InlineData("-A", false, 0, 0)] // invalid character after a sign
@@ -1293,158 +932,123 @@ namespace System.Text.Primitives.Tests
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
         [InlineData("9223372036854775808", false, 0, 0)] // positive overflow test
         [InlineData("-9223372036854775809", false, 0, 0)] // negative overflow test
-        public void ParseUtf8SpanToLongConsumed(string text, bool expectSuccess, long expectedValue, int expectedBytesConsumed)
+        public unsafe void ParseInt64Invariant(string text, bool expectSuccess, long expectedValue, int expectedConsumed)
         {
             long parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, false);
-            bool result = PrimitiveParser.InvariantUtf8.TryParseInt64(span, out parsedValue, out bytesConsumed);
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
+			result = PrimitiveParser.InvariantUtf8.TryParseInt64(utf8Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
 
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("555642036585755426abcdefg", true, 555642036585755426)]
-        [InlineData("9223372036854775807", true, 9223372036854775807)] // max
-        [InlineData("-9223372036854775808", true, -9223372036854775808)] // min
-        [InlineData("-A", false, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("9223372036854775808", false, 0)] // positive overflow test
-        [InlineData("-9223372036854775809", false, 0)] // negative overflow test
-        public unsafe void ParseUtf8ByteStarToLong(string text, bool expectSuccess, long expectedValue)
-        {
-            long parsedValue;
-
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
-            {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseInt64(arrayPointer, textBytes.Length, out parsedValue);
-
-                Assert.Equal(expectSuccess, result);
-                Assert.Equal(expectedValue, parsedValue);
-            }
-        }
-
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("555642036585755426abcdefg", true, 555642036585755426, 18)]
-        [InlineData("9223372036854775807", true, 9223372036854775807, 19)] // max
-        [InlineData("-9223372036854775808", true, -9223372036854775808, 20)] // min
-        [InlineData("-A", false, 0, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("9223372036854775808", false, 0, 0)] // positive overflow test
-        [InlineData("-9223372036854775809", false, 0, 0)] // negative overflow test
-        public unsafe void ParseUtf8ByteStarToLongConsumed(string text, bool expectSuccess, long expectedValue, int expectedBytesConsumed)
-        {
-            long parsedValue;
-            int bytesConsumed;
-
-            byte[] textBytes = UtfEncode(text, false);
-            fixed (byte* arrayPointer = textBytes)
-            {
-                bool result = PrimitiveParser.InvariantUtf8.TryParseInt64(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
-
-                Assert.Equal(expectSuccess, result);
-                Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
-            }
-        }
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("555642036585755426abcdefg", true, 555642036585755426)]
-        [InlineData("9223372036854775807", true, 9223372036854775807)] // max
-        [InlineData("-9223372036854775808", true, -9223372036854775808)] // min
-        [InlineData("-A", false, 0,)] // invalid character after a sign
-        [InlineData("I am 1", false, 0,)] // invalid character test
-        [InlineData(" !", false, 0,)] // invalid character test w/ char < '0'
-        [InlineData("9223372036854775808", false, 0,)] // positive overflow test
-        [InlineData("-9223372036854775809", false, 0,)] // negative overflow test
-        public void ParseUtf16SpanToLong(string text, bool expectSuccess, long expectedValue)
-        {
-            long parsedValue;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseInt64(span, out parsedValue);
-
+            result = PrimitiveParser.InvariantUtf8.TryParseInt64(utf8Span, out parsedValue, out consumed);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-        }
+            Assert.Equal(expectedConsumed, consumed);
 
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("555642036585755426abcdefg", true, 555642036585755426, 18)]
-        [InlineData("9223372036854775807", true, 9223372036854775807, 19)] // max
-        [InlineData("-9223372036854775808", true, -9223372036854775808, 20)] // min
-        [InlineData("-A", false, 0, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0, 0)] // invalid character test
-        [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("9223372036854775808", false, 0, 0)] // positive overflow test
-        [InlineData("-9223372036854775809", false, 0, 0)] // negative overflow test
-        public void ParseUtf16SpanToLongConsumed(string text, bool expectSuccess, long expectedValue, int expectedBytesConsumed)
-        {
-            long parsedValue;
-            int bytesConsumed;
-			var span = UtfEncode(text, true);
-            bool result = PrimitiveParser.InvariantUtf16.TryParseInt64(span, out parsedValue, out bytesConsumed);
+			fixed (byte* arrayPointer = textBytes)
+            {
+                result = PrimitiveParser.InvariantUtf8.TryParseInt64(arrayPointer, textBytes.Length, out parsedValue);
 
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf8.TryParseInt64(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
+            }
+
+			result = PrimitiveParser.InvariantUtf16.TryParseInt64(utf16Span, out parsedValue);
             Assert.Equal(expectSuccess, result);
             Assert.Equal(expectedValue, parsedValue);
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-        }
 
-		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("555642036585755426abcdefg", true, 555642036585755426)]
-        [InlineData("9223372036854775807", true, 9223372036854775807)] // max
-        [InlineData("-9223372036854775808", true, -9223372036854775808)] // min
-        [InlineData("-A", false, 0)] // invalid character after a sign
-        [InlineData("I am 1", false, 0)] // invalid character test
-        [InlineData(" !", false, 0)] // invalid character test w/ char < '0'
-        [InlineData("9223372036854775808", false, 0)] // positive overflow test
-        [InlineData("-9223372036854775809", false, 0)] // negative overflow test
-        public unsafe void ParseUtf16ByteStarToLong(string text, bool expectSuccess, long expectedValue)
-        {
-            long parsedValue;
+			result = PrimitiveParser.InvariantUtf16.TryParseInt64(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
 
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			fixed (char* arrayPointer = textChars)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseInt64(arrayPointer, textBytes.Length, out parsedValue);
-
+                result = PrimitiveParser.InvariantUtf16.TryParseInt64(arrayPointer, textBytes.Length, out parsedValue);
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf16.TryParseInt64(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
 
 		[Theory]
-        [InlineData("111", true, 111, 3)]
-        [InlineData("555642036585755426abcdefg", true, 555642036585755426, 18)]
-        [InlineData("9223372036854775807", true, 9223372036854775807, 19)] // max
-        [InlineData("-9223372036854775808", true, -9223372036854775808, 20)] // min
-        [InlineData("-A", false, 0, 0)] // invalid character after a sign
+        [InlineData("1f", true, 0x1f, 2)]
+        [InlineData("7F340980C8C6717ghijzl", true, 0x7F340980C8C6717, 15)]
+        [InlineData("7FFFFFFFFFFFFFFF", true, 0x7FFFFFFFFFFFFFFF, 16)] // positive max
+        [InlineData("8000000000000000", true, -0x8000000000000000, 16)] // negative min
+        [InlineData("-G", false, 0, 0)] // invalid character after a sign
         [InlineData("I am 1", false, 0, 0)] // invalid character test
         [InlineData(" !", false, 0, 0)] // invalid character test w/ char < '0'
-        [InlineData("9223372036854775808", false, 0, 0)] // positive overflow test
-        [InlineData("-9223372036854775809", false, 0, 0)] // negative overflow test
-        public unsafe void ParseUtf16ByteStarToLongConsumed(string text, bool expectSuccess, long expectedValue, int expectedBytesConsumed)
+        [InlineData("10000000000000000", false, 0, 0)] // overflow test
+        public unsafe void ParseInt64InvariantHex(string text, bool expectSuccess, long expectedValue, int expectedConsumed)
         {
             long parsedValue;
-            int bytesConsumed;
+            int consumed;
+			ReadOnlySpan<byte> utf8Span = UtfEncode(text, false);
+			ReadOnlySpan<char> utf16Span = new ReadOnlySpan<byte>(UtfEncode(text, true)).Cast<byte, char>();
+			byte[] textBytes = utf8Span.ToArray();
+			char[] textChars = utf16Span.ToArray();
+			bool result;
 
-            byte[] textBytes = UtfEncode(text, true);
-            fixed (byte* arrayPointer = textBytes)
+			result = PrimitiveParser.InvariantUtf8.Hex.TryParseInt64(utf8Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+
+            result = PrimitiveParser.InvariantUtf8.Hex.TryParseInt64(utf8Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (byte* arrayPointer = textBytes)
             {
-                bool result = PrimitiveParser.InvariantUtf16.TryParseInt64(arrayPointer, textBytes.Length, out parsedValue, out bytesConsumed);
+                result = PrimitiveParser.InvariantUtf8.Hex.TryParseInt64(arrayPointer, textBytes.Length, out parsedValue);
 
                 Assert.Equal(expectSuccess, result);
                 Assert.Equal(expectedValue, parsedValue);
-                Assert.Equal(expectedBytesConsumed, bytesConsumed);
+
+				result = PrimitiveParser.InvariantUtf8.Hex.TryParseInt64(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
+            }
+
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseInt64(utf16Span, out parsedValue);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+
+			result = PrimitiveParser.InvariantUtf16.Hex.TryParseInt64(utf16Span, out parsedValue, out consumed);
+            Assert.Equal(expectSuccess, result);
+            Assert.Equal(expectedValue, parsedValue);
+            Assert.Equal(expectedConsumed, consumed);
+
+			fixed (char* arrayPointer = textChars)
+            {
+                result = PrimitiveParser.InvariantUtf16.Hex.TryParseInt64(arrayPointer, textBytes.Length, out parsedValue);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+
+				result = PrimitiveParser.InvariantUtf16.Hex.TryParseInt64(arrayPointer, textBytes.Length, out parsedValue, out consumed);
+                Assert.Equal(expectSuccess, result);
+                Assert.Equal(expectedValue, parsedValue);
+                Assert.Equal(expectedConsumed, consumed);
             }
         }
+
 		#endregion
 
 	}

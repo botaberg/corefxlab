@@ -139,7 +139,7 @@ namespace System.Text.Primitives.Tests
 
 		#region byte
 
-		[Theory]
+		// [Theory]
         [InlineData("55", true, 0, 55, 2)]
         [InlineData("blahblahh68", true, 9, 68, 2)]
         [InlineData("68abhced", true, 0, 68, 2)]
@@ -159,7 +159,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("55", true, 0, 55, 2)]
         [InlineData("blahblahh68", true, 9, 68, 2)]
         [InlineData("68abhced", true, 0, 68, 2)]
@@ -180,7 +180,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("55", true, 0, 55, 2)]
         [InlineData("blahblahh68", true, 9, 68, 2)]
         [InlineData("68abhced", true, 0, 68, 2)]
@@ -202,7 +202,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("55", true, 0, 55, 2)]
         [InlineData("blahblahh68", true, 9, 68, 2)]
         [InlineData("68abhced", true, 0, 68, 2)]
@@ -228,7 +228,7 @@ namespace System.Text.Primitives.Tests
             }
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("55", true, 0, 55, 4)]
         [InlineData("blahblahh68", true, 18, 68, 4)]
         [InlineData("68abhced", true, 0, 68, 4)]
@@ -249,7 +249,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("55", true, 0, 55, 4)]
         [InlineData("blahblahh68", true, 18, 68, 4)]
         [InlineData("68abhced", true, 0, 68, 4)]
@@ -271,7 +271,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("55", true, 0, 55, 4)]
         [InlineData("blahblahh68", true, 18, 68, 4)]
         [InlineData("68abhced", true, 0, 68, 4)]
@@ -301,7 +301,7 @@ namespace System.Text.Primitives.Tests
 
 		#region ushort
 
-		[Theory]
+		// [Theory]
         [InlineData("5535", true, 0, 5535, 4)]
         [InlineData("blahblahh6836", true, 9, 6836, 4)]
         [InlineData("6836abhced", true, 0, 6836, 4)]
@@ -321,7 +321,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("5535", true, 0, 5535, 4)]
         [InlineData("blahblahh6836", true, 9, 6836, 4)]
         [InlineData("6836abhced", true, 0, 6836, 4)]
@@ -342,7 +342,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("5535", true, 0, 5535, 4)]
         [InlineData("blahblahh6836", true, 9, 6836, 4)]
         [InlineData("6836abhced", true, 0, 6836, 4)]
@@ -364,7 +364,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("5535", true, 0, 5535, 4)]
         [InlineData("blahblahh6836", true, 9, 6836, 4)]
         [InlineData("6836abhced", true, 0, 6836, 4)]
@@ -390,7 +390,7 @@ namespace System.Text.Primitives.Tests
             }
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("5535", true, 0, 5535, 8)]
         [InlineData("blahblahh6836", true, 18, 6836, 8)]
         [InlineData("6836abhced", true, 0, 6836, 8)]
@@ -411,7 +411,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("5535", true, 0, 5535, 8)]
         [InlineData("blahblahh6836", true, 18, 6836, 8)]
         [InlineData("6836abhced", true, 0, 6836, 8)]
@@ -433,7 +433,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("5535", true, 0, 5535, 8)]
         [InlineData("blahblahh6836", true, 18, 6836, 8)]
         [InlineData("6836abhced", true, 0, 6836, 8)]
@@ -463,7 +463,7 @@ namespace System.Text.Primitives.Tests
 
 		#region uint
 
-		[Theory]
+		// [Theory]
         [InlineData("294967295", true, 0, 294967295, 9)]
         [InlineData("blahblahh354864498", true, 9, 354864498, 9)]
         [InlineData("354864498abhced", true, 0, 354864498, 9)]
@@ -483,7 +483,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("294967295", true, 0, 294967295, 9)]
         [InlineData("blahblahh354864498", true, 9, 354864498, 9)]
         [InlineData("354864498abhced", true, 0, 354864498, 9)]
@@ -504,7 +504,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("294967295", true, 0, 294967295, 9)]
         [InlineData("blahblahh354864498", true, 9, 354864498, 9)]
         [InlineData("354864498abhced", true, 0, 354864498, 9)]
@@ -526,7 +526,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("294967295", true, 0, 294967295, 9)]
         [InlineData("blahblahh354864498", true, 9, 354864498, 9)]
         [InlineData("354864498abhced", true, 0, 354864498, 9)]
@@ -552,7 +552,7 @@ namespace System.Text.Primitives.Tests
             }
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("294967295", true, 0, 294967295, 18)]
         [InlineData("blahblahh354864498", true, 18, 354864498, 18)]
         [InlineData("354864498abhced", true, 0, 354864498, 18)]
@@ -573,7 +573,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("294967295", true, 0, 294967295, 18)]
         [InlineData("blahblahh354864498", true, 18, 354864498, 18)]
         [InlineData("354864498abhced", true, 0, 354864498, 18)]
@@ -595,7 +595,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("294967295", true, 0, 294967295, 18)]
         [InlineData("blahblahh354864498", true, 18, 354864498, 18)]
         [InlineData("354864498abhced", true, 0, 354864498, 18)]
@@ -625,7 +625,7 @@ namespace System.Text.Primitives.Tests
 
 		#region ulong
 
-		[Theory]
+		// [Theory]
         [InlineData("8446744073709551615", true, 0, 8446744073709551615, 19)]
         [InlineData("blahblahh6745766045317562215", true, 9, 6745766045317562215, 19)]
         [InlineData("6745766045317562215abhced", true, 0, 6745766045317562215, 19)]
@@ -645,7 +645,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("8446744073709551615", true, 0, 8446744073709551615, 19)]
         [InlineData("blahblahh6745766045317562215", true, 9, 6745766045317562215, 19)]
         [InlineData("6745766045317562215abhced", true, 0, 6745766045317562215, 19)]
@@ -666,7 +666,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("8446744073709551615", true, 0, 8446744073709551615, 19)]
         [InlineData("blahblahh6745766045317562215", true, 9, 6745766045317562215, 19)]
         [InlineData("6745766045317562215abhced", true, 0, 6745766045317562215, 19)]
@@ -688,7 +688,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("8446744073709551615", true, 0, 8446744073709551615, 19)]
         [InlineData("blahblahh6745766045317562215", true, 9, 6745766045317562215, 19)]
         [InlineData("6745766045317562215abhced", true, 0, 6745766045317562215, 19)]
@@ -714,7 +714,7 @@ namespace System.Text.Primitives.Tests
             }
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("8446744073709551615", true, 0, 8446744073709551615, 38)]
         [InlineData("blahblahh6745766045317562215", true, 18, 6745766045317562215, 38)]
         [InlineData("6745766045317562215abhced", true, 0, 6745766045317562215, 38)]
@@ -735,7 +735,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("8446744073709551615", true, 0, 8446744073709551615, 38)]
         [InlineData("blahblahh6745766045317562215", true, 18, 6745766045317562215, 38)]
         [InlineData("6745766045317562215abhced", true, 0, 6745766045317562215, 38)]
@@ -757,7 +757,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("8446744073709551615", true, 0, 8446744073709551615, 38)]
         [InlineData("blahblahh6745766045317562215", true, 18, 6745766045317562215, 38)]
         [InlineData("6745766045317562215abhced", true, 0, 6745766045317562215, 38)]
@@ -787,7 +787,7 @@ namespace System.Text.Primitives.Tests
 
 		#region sbyte
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh27", true, 9, 27, 2)]
         [InlineData("53abcdefg", true, 0, 53, 2)]
@@ -811,7 +811,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("๑๑๑", true, 0, 111, 9)]
         [InlineData("เรื่องเหลวไหล๒๗", true, 39, 27, 6)]
         [InlineData("๕๖กขฃคฅฆง", true, 0, 56, 6)]
@@ -834,7 +834,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh27", true, 9, 27, 2)]
         [InlineData("53abcdefg", true, 0, 53, 2)]
@@ -859,7 +859,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh27", true, 9, 27, 2)]
         [InlineData("53abcdefg", true, 0, 53, 2)]
@@ -885,7 +885,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh27", true, 9, 27, 2)]
         [InlineData("53abcdefg", true, 0, 53, 2)]
@@ -916,7 +916,7 @@ namespace System.Text.Primitives.Tests
             }
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 6)]
         [InlineData("blahblahh27", true, 18, 27, 4)]
         [InlineData("53abcdefg", true, 0, 53, 4)]
@@ -941,7 +941,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 6)]
         [InlineData("blahblahh27", true, 18, 27, 4)]
         [InlineData("53abcdefg", true, 0, 53, 4)]
@@ -967,7 +967,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 6)]
         [InlineData("blahblahh27", true, 18, 27, 4)]
         [InlineData("53abcdefg", true, 0, 53, 4)]
@@ -1002,7 +1002,7 @@ namespace System.Text.Primitives.Tests
 
 		#region short
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh2767", true, 9, 2767, 4)]
         [InlineData("5333abcdefg", true, 0, 5333, 4)]
@@ -1026,7 +1026,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("๑๑๑", true, 0, 111, 9)]
         [InlineData("เรื่องเหลวไหล๒๗", true, 39, 27, 6)]
         [InlineData("๕๖กขฃคฅฆง", true, 0, 56, 6)]
@@ -1049,7 +1049,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh2767", true, 9, 2767, 4)]
         [InlineData("5333abcdefg", true, 0, 5333, 4)]
@@ -1074,7 +1074,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh2767", true, 9, 2767, 4)]
         [InlineData("5333abcdefg", true, 0, 5333, 4)]
@@ -1100,7 +1100,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh2767", true, 9, 2767, 4)]
         [InlineData("5333abcdefg", true, 0, 5333, 4)]
@@ -1131,7 +1131,7 @@ namespace System.Text.Primitives.Tests
             }
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 6)]
         [InlineData("blahblahh2767", true, 18, 2767, 8)]
         [InlineData("5333abcdefg", true, 0, 5333, 8)]
@@ -1156,7 +1156,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 6)]
         [InlineData("blahblahh2767", true, 18, 2767, 8)]
         [InlineData("5333abcdefg", true, 0, 5333, 8)]
@@ -1182,7 +1182,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 6)]
         [InlineData("blahblahh2767", true, 18, 2767, 8)]
         [InlineData("5333abcdefg", true, 0, 5333, 8)]
@@ -1217,7 +1217,7 @@ namespace System.Text.Primitives.Tests
 
 		#region int
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh147483647", true, 9, 147483647, 9)]
         [InlineData("474753647abcdefg", true, 0, 474753647, 9)]
@@ -1241,7 +1241,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("๑๑๑", true, 0, 111, 9)]
         [InlineData("เรื่องเหลวไหล๒๗", true, 39, 27, 6)]
         [InlineData("๕๖กขฃคฅฆง", true, 0, 56, 6)]
@@ -1264,7 +1264,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh147483647", true, 9, 147483647, 9)]
         [InlineData("474753647abcdefg", true, 0, 474753647, 9)]
@@ -1289,7 +1289,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh147483647", true, 9, 147483647, 9)]
         [InlineData("474753647abcdefg", true, 0, 474753647, 9)]
@@ -1315,7 +1315,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh147483647", true, 9, 147483647, 9)]
         [InlineData("474753647abcdefg", true, 0, 474753647, 9)]
@@ -1346,7 +1346,7 @@ namespace System.Text.Primitives.Tests
             }
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 6)]
         [InlineData("blahblahh147483647", true, 18, 147483647, 18)]
         [InlineData("474753647abcdefg", true, 0, 474753647, 18)]
@@ -1371,7 +1371,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 6)]
         [InlineData("blahblahh147483647", true, 18, 147483647, 18)]
         [InlineData("474753647abcdefg", true, 0, 474753647, 18)]
@@ -1397,7 +1397,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 6)]
         [InlineData("blahblahh147483647", true, 18, 147483647, 18)]
         [InlineData("474753647abcdefg", true, 0, 474753647, 18)]
@@ -1432,7 +1432,7 @@ namespace System.Text.Primitives.Tests
 
 		#region long
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh223372036854775807", true, 9, 223372036854775807, 18)]
         [InlineData("555642036585755426abcdefg", true, 0, 555642036585755426, 18)]
@@ -1456,7 +1456,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("๑๑๑", true, 0, 111, 9)]
         [InlineData("เรื่องเหลวไหล๒๗", true, 39, 27, 6)]
         [InlineData("๕๖กขฃคฅฆง", true, 0, 56, 6)]
@@ -1479,7 +1479,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh223372036854775807", true, 9, 223372036854775807, 18)]
         [InlineData("555642036585755426abcdefg", true, 0, 555642036585755426, 18)]
@@ -1504,7 +1504,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh223372036854775807", true, 9, 223372036854775807, 18)]
         [InlineData("555642036585755426abcdefg", true, 0, 555642036585755426, 18)]
@@ -1530,7 +1530,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 3)]
         [InlineData("blahblahh223372036854775807", true, 9, 223372036854775807, 18)]
         [InlineData("555642036585755426abcdefg", true, 0, 555642036585755426, 18)]
@@ -1561,7 +1561,7 @@ namespace System.Text.Primitives.Tests
             }
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 6)]
         [InlineData("blahblahh223372036854775807", true, 18, 223372036854775807, 36)]
         [InlineData("555642036585755426abcdefg", true, 0, 555642036585755426, 36)]
@@ -1586,7 +1586,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 6)]
         [InlineData("blahblahh223372036854775807", true, 18, 223372036854775807, 36)]
         [InlineData("555642036585755426abcdefg", true, 0, 555642036585755426, 36)]
@@ -1612,7 +1612,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData("111", true, 0, 111, 6)]
         [InlineData("blahblahh223372036854775807", true, 18, 223372036854775807, 36)]
         [InlineData("555642036585755426abcdefg", true, 0, 555642036585755426, 36)]
@@ -1647,7 +1647,7 @@ namespace System.Text.Primitives.Tests
 
 		#region float
 
-		[Theory]
+		// [Theory]
         [InlineData(".1728", true, 0, 0.1728f, 5)]
         [InlineData("blahblahh175.1110", true, 9, 175.1110f, 8)]
         [InlineData("+98.7abcdefg", true, 0, 98.7f, 5)]
@@ -1673,7 +1673,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData(".1728", true, 0, 0.1728f, 5)]
         [InlineData("blahblahh175.1110", true, 9, 175.1110f, 8)]
         [InlineData("+98.7abcdefg", true, 0, 98.7f, 5)]
@@ -1709,7 +1709,7 @@ namespace System.Text.Primitives.Tests
 
 		#region double
 
-		[Theory]
+		// [Theory]
         [InlineData(".1728", true, 0, 0.1728, 5)]
         [InlineData("blahblahh175.1110", true, 9, 175.1110, 8)]
         [InlineData("+98.7abcdefg", true, 0, 98.7, 5)]
@@ -1735,7 +1735,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-		[Theory]
+		// [Theory]
         [InlineData(".1728", true, 0, 0.1728, 5)]
         [InlineData("blahblahh175.1110", true, 9, 175.1110, 8)]
         [InlineData("+98.7abcdefg", true, 0, 98.7, 5)]
@@ -1771,7 +1771,7 @@ namespace System.Text.Primitives.Tests
 
 		#region bool
 		
-        [Theory]
+        // [Theory]
         [InlineData("blahblahhTrue", true, 9, true, 4)]
         [InlineData("trueacndasjfh", true, 0, true, 4)]
         [InlineData("LetthemFALSEeatcake", true, 7, false, 5)]
@@ -1831,7 +1831,7 @@ namespace System.Text.Primitives.Tests
 
 		#region decimal
 
-        [Theory]
+        // [Theory]
         [InlineData(".1728", true, 0, 0.1728, 5)]
         [InlineData("blahblahh175.1110", true, 9, 175.1110, 8)]
         [InlineData("+98.25abcdefg", true, 0, 98.25, 6)]
@@ -1849,7 +1849,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-        [Theory]
+        // [Theory]
         [InlineData(".1728", true, 0, 0.1728, 5)]
         [InlineData("blahblahh175.1110", true, 9, 175.1110, 8)]
         [InlineData("+98.25abcdefg", true, 0, 98.25, 6)]
@@ -1875,7 +1875,7 @@ namespace System.Text.Primitives.Tests
         #endregion
 
         #region uri
-        [Theory]
+        // [Theory]
         [InlineData("http://www.example.com/", true, 0, "http://www.example.com/", 23)]
         [InlineData("https://www.example.org/important.php?true=true", true, 0, "https://www.example.org/important.php?true=true", 47)]
         [InlineData("http://msw", true, 0, "http://msw", 10)]
@@ -1904,7 +1904,7 @@ namespace System.Text.Primitives.Tests
             Assert.Equal(expectedBytesConsumed, bytesConsumed);
         }
 
-        [Theory]
+        // [Theory]
         [InlineData("http://www.example.com/", true, 0, "http://www.example.com/", 23)]
         [InlineData("https://www.example.org/important.php?true=true", true, 0, "https://www.example.org/important.php?true=true", 47)]
         [InlineData("http://msw", true, 0, "http://msw", 10)]
