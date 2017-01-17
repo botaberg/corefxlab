@@ -255,6 +255,9 @@
             var probe = scan;
 
             var value1 = ReadHex(ref probe, buffer);
+            //uint value1;
+            //int bytesConsumed;
+            //bool success = PrimitiveParser.InvariantUtf8.Hex.TryParseUInt32(buffer, out value1, out bytesConsumed);
             if (value1 == -1)
             {
                 return -1;
