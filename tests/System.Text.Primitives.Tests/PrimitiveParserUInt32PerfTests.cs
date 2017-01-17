@@ -257,6 +257,29 @@ namespace System.Text.Primitives.Tests
         [InlineData("2134567890")] // standard parse
         [InlineData("4294967295")] // max value
         [InlineData("0")] // min value
+        private unsafe static void PrimitiveParserByteSpanToUInt32_MainOverload(string text)
+        {
+            byte[] utf8ByteArray = Encoding.UTF8.GetBytes(text);
+            ReadOnlySpan<byte> utf8ByteSpan = new ReadOnlySpan<byte>(utf8ByteArray);
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < LoadIterations; i++)
+                    {
+                        uint value;
+                        int bytesConsumed;
+                        PrimitiveParser.TryParseUInt32(utf8ByteSpan, out value, out bytesConsumed);
+                        DoNotIgnore(value, bytesConsumed);
+                    }
+                }
+            }
+        }
+
+        [Benchmark]
+        [InlineData("2134567890")] // standard parse
+        [InlineData("4294967295")] // max value
+        [InlineData("0")] // min value
         private unsafe static void PrimitiveParserByteSpanToUInt32(string text)
         {
             byte[] utf8ByteArray = Encoding.UTF8.GetBytes(text);
