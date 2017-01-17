@@ -21,9 +21,8 @@
     "keyFile": "../../tools/Key.snk"
   },
   "dependencies": {
-    "System.Slices": {
-      "target": "project"
-    }
+    "System.Slices": { "target": "project" },
+    "System.Text.Primitives": { "target": "project" }
   },
   "frameworks": {
     "netstandard1.1": {}
