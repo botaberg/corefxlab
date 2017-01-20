@@ -9,20 +9,16 @@ namespace System.Buffers
 {
     public static class BufferExtensions
     {
-        public static ArraySegment<T> Slice<T>(this ArraySegment<T> source, int count)
-        {
-            return new ArraySegment<T>(source.Array, source.Offset + count, source.Count - count);
-        }
-
-        public static ReadOnlySpan<byte> ToSingleSpan<T>(this T memorySequence) where T : ISequence<ReadOnlyMemory<byte>>
+        public static ReadOnlySpan<byte> ToSpan<T>(this T memorySequence) where T : ISequence<ReadOnlyMemory<byte>>
         {
             Position position = Position.First;
             ReadOnlyMemory<byte> memory;
-            ResizableArray<byte> array = new ResizableArray<byte>(1024); // TODO: could this be rented from a pool?
+            ResizableArray<byte> array = new ResizableArray<byte>(memorySequence.Length.GetValueOrDefault(1024)); 
             while (memorySequence.TryGet(ref position, out memory))
             {
                 array.AddAll(memory.Span);
             }
+            array.Resize(array.Count);
             return array.Items.Slice(0, array.Count);
         }
 

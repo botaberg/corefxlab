@@ -2,6 +2,19 @@
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+namespace System.Runtime
+{
+    public enum ReferenceCountingMethod {
+        Interlocked,
+        ReferenceCounter,
+        None
+    };
+
+    public class ReferenceCountingSettings {
+        public static ReferenceCountingMethod OwnedMemory = ReferenceCountingMethod.Interlocked;
+    }
+}
+
 namespace System.Buffers
 {
     public abstract class OwnedMemory<T> : IDisposable, IMemory<T>
@@ -18,7 +31,13 @@ namespace System.Buffers
         protected T[] Array { get; private set; }
         protected IntPtr Pointer { get; private set; }
         protected int Offset { get; private set; }
-        public int ReferenceCount { get { return _referenceCount; } }
+        public bool HasOutstandingReferences { 
+            get { 
+                return _referenceCount != 0 
+                        || (ReferenceCountingSettings.OwnedMemory == ReferenceCountingMethod.ReferenceCounter
+                            && ReferenceCounter.HasReference(this)); 
+            } 
+        }
 
         private OwnedMemory() { }
 
@@ -87,7 +106,7 @@ namespace System.Buffers
         public void Dispose()
         {
             Interlocked.Exchange(ref _id,  FreedId);
-            if (ReferenceCount != 0) throw new InvalidOperationException("outstanding references detected.");
+            if (HasOutstandingReferences) throw new InvalidOperationException("outstanding references detected.");
             Dispose(true);
             Array = null;
             Pointer = IntPtr.Zero;
@@ -102,21 +121,18 @@ namespace System.Buffers
 
         public void AddReference()
         {
-            OnReferenceCountChanged(Interlocked.Increment(ref _referenceCount));
+            Interlocked.Increment(ref _referenceCount);
         }
 
         public void Release()
         {
-            OnReferenceCountChanged(Interlocked.Decrement(ref _referenceCount));
+            if(Interlocked.Decrement(ref _referenceCount) == 0)
+                OnZeroReferences();
         }
 
-        protected virtual void OnReferenceCountChanged(int newReferenceCount)
+        protected virtual void OnZeroReferences()
         { }
 
-        protected internal virtual DisposableReservation Reserve(ref ReadOnlyMemory<T> memory)
-        {
-            return new DisposableReservation(this, Id);
-        }
 
         #endregion
 
@@ -198,21 +214,41 @@ namespace System.Buffers
         unsafe bool TryGetPointer(long id, out void* pointer);
     }
 
-    public struct DisposableReservation : IDisposable
+    public struct DisposableReservation<T> : IDisposable
     {
-        IKnown _owner;
+        OwnedMemory<T> _owner;
         long _id;
 
-        internal DisposableReservation(IKnown owner, long id)
+        internal DisposableReservation(OwnedMemory<T> owner, long id)
         {
             _id = id;
             _owner = owner;
-            _owner.AddReference(_id);
+            switch(ReferenceCountingSettings.OwnedMemory) {
+                case ReferenceCountingMethod.Interlocked:
+                    ((IKnown)_owner).AddReference(_id);
+                    break;
+                case ReferenceCountingMethod.ReferenceCounter:
+                    ReferenceCounter.AddReference(_owner);
+                    break;
+                case ReferenceCountingMethod.None:
+                    break;
+            }
         }
+
+        public Span<T> Span => _owner.Span;
 
         public void Dispose()
         {
-            _owner.Release(_id);
+            switch (ReferenceCountingSettings.OwnedMemory) {
+                case ReferenceCountingMethod.Interlocked:
+                    ((IKnown)_owner).Release(_id);
+                    break;
+                case ReferenceCountingMethod.ReferenceCounter:
+                    ReferenceCounter.Release(_owner);
+                    break;
+                case ReferenceCountingMethod.None:
+                    break;
+            }
             _owner = null;
         }
     }
