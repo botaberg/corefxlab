@@ -15,12 +15,29 @@ namespace System.Text
         private byte[][] _symbols; // this could be flattened into a single array
         private ParsingTrieNode[] _parsingTrie; // prefix tree used for parsing
         private TextEncoder _encoder;
+        private bool _isNotDefault; // Default is false; set to true in constructor
+        private bool _isInvariantUtf8;
+        private bool _isInvariantUtf16;
 
         public EncodingData(byte[][] symbols, TextEncoder encoder)
         {
-            _symbols = symbols;
-            _encoder = encoder;
-            _parsingTrie = CreateParsingTrie(symbols);
+            if (symbols == s_invariantUtf8._symbols)
+            {
+                this = s_invariantUtf8;
+            }
+            else if (symbols == s_invariantUtf16._symbols)
+            {
+                this = s_invariantUtf16;
+            }
+            else
+            {
+                _isNotDefault = true;
+                _isInvariantUtf8 = false;
+                _isInvariantUtf16 = false;
+                _symbols = symbols;
+                _encoder = encoder;
+                _parsingTrie = CreateParsingTrie(symbols);
+            }
         }
 
         public static EncodingData InvariantUtf16
@@ -110,13 +127,19 @@ namespace System.Text
             return true;
         }
 
+        public bool IsDefault
+        {
+            get { return !_isNotDefault; }
+        }
+
         public bool IsInvariantUtf16
         {
-            get { return _symbols == s_invariantUtf16._symbols; }
+            get { return _isInvariantUtf16; }
         }
+
         public bool IsInvariantUtf8
         {
-            get { return _symbols == s_invariantUtf8._symbols; }
+            get { return _isInvariantUtf8; }
         }
 
         public TextEncoder TextEncoder => _encoder;
@@ -193,8 +216,13 @@ namespace System.Text
                 new byte[] { 69, 0, }, // E
                 new byte[] { 101, 0, }, // e
             };
-
-            s_invariantUtf16 = new EncodingData(utf16digitsAndSymbols, TextEncoder.Utf16);
+            
+            s_invariantUtf16._symbols = utf16digitsAndSymbols;
+            s_invariantUtf16._encoder = TextEncoder.Utf16;
+            s_invariantUtf16._parsingTrie = CreateParsingTrie(utf16digitsAndSymbols);
+            s_invariantUtf16._isNotDefault = true;
+            s_invariantUtf16._isInvariantUtf16 = true;
+            s_invariantUtf16._isInvariantUtf8 = false;
 
             var utf8digitsAndSymbols = new byte[][] {
                 new byte[] { 48, },
@@ -217,7 +245,12 @@ namespace System.Text
                 new byte[] { 101, }, // e
             };
 
-            s_invariantUtf8 = new EncodingData(utf8digitsAndSymbols, TextEncoder.Utf8);
+            s_invariantUtf8._symbols = utf8digitsAndSymbols;
+            s_invariantUtf8._encoder = TextEncoder.Utf8;
+            s_invariantUtf8._parsingTrie = CreateParsingTrie(utf8digitsAndSymbols);
+            s_invariantUtf8._isNotDefault = true;
+            s_invariantUtf8._isInvariantUtf16 = false;
+            s_invariantUtf8._isInvariantUtf8 = true;
         }
 
         // TODO: this should be removed

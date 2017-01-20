@@ -11,17 +11,12 @@ namespace System.Text
     {
         public static bool TryParseSByte(ReadOnlySpan<byte> text, out sbyte value, out int bytesConsumed, EncodingData encoding = default(EncodingData), TextFormat format = default(TextFormat))
         {
-            if (encoding == default(EncodingData))
-            {
-                encoding = EncodingData.InvariantUtf8;
-            }
-
             if (!format.IsDefault && format.HasPrecision)
             {
                 throw new NotImplementedException("Format with precision not supported.");
             }
 
-            if (encoding.IsInvariantUtf8)
+            if (encoding.IsInvariantUtf8 || encoding == default(EncodingData))
             {
                 if (format.IsHexadecimal)
                 {
@@ -128,17 +123,12 @@ namespace System.Text
 
         public static bool TryParseInt16(ReadOnlySpan<byte> text, out short value, out int bytesConsumed, EncodingData encoding = default(EncodingData), TextFormat format = default(TextFormat))
         {
-            if (encoding == default(EncodingData))
-            {
-                encoding = EncodingData.InvariantUtf8;
-            }
-
             if (!format.IsDefault && format.HasPrecision)
             {
                 throw new NotImplementedException("Format with precision not supported.");
             }
 
-            if (encoding.IsInvariantUtf8)
+            if (encoding.IsInvariantUtf8 || encoding == default(EncodingData))
             {
                 if (format.IsHexadecimal)
                 {
@@ -245,17 +235,12 @@ namespace System.Text
 
         public static bool TryParseInt32(ReadOnlySpan<byte> text, out int value, out int bytesConsumed, EncodingData encoding = default(EncodingData), TextFormat format = default(TextFormat))
         {
-            if (encoding == default(EncodingData))
-            {
-                encoding = EncodingData.InvariantUtf8;
-            }
-
             if (!format.IsDefault && format.HasPrecision)
             {
                 throw new NotImplementedException("Format with precision not supported.");
             }
 
-            if (encoding.IsInvariantUtf8)
+            if (encoding.IsInvariantUtf8 || encoding == default(EncodingData))
             {
                 if (format.IsHexadecimal)
                 {
@@ -362,17 +347,12 @@ namespace System.Text
 
         public static bool TryParseInt64(ReadOnlySpan<byte> text, out long value, out int bytesConsumed, EncodingData encoding = default(EncodingData), TextFormat format = default(TextFormat))
         {
-            if (encoding == default(EncodingData))
-            {
-                encoding = EncodingData.InvariantUtf8;
-            }
-
             if (!format.IsDefault && format.HasPrecision)
             {
                 throw new NotImplementedException("Format with precision not supported.");
             }
 
-            if (encoding.IsInvariantUtf8)
+            if (encoding.IsInvariantUtf8 || encoding == default(EncodingData))
             {
                 if (format.IsHexadecimal)
                 {
