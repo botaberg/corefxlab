@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using Xunit;
+using Microsoft.Xunit.Performance;
 
 namespace System.Text.Encodings.Web.Utf8.Tests
 {
