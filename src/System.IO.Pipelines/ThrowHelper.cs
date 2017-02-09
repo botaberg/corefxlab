@@ -15,9 +15,9 @@ namespace System.IO.Pipelines
             throw GetArgumentOutOfRangeException(argument);
         }
 
-        public static void ThrowInvalidOperationException(ExceptionResource resource)
+        public static void ThrowInvalidOperationException(ExceptionResource resource, string location = null)
         {
-            throw GetInvalidOperationException(resource);
+            throw GetInvalidOperationException(resource, location);
         }
 
         public static void ThrowArgumentNullException(ExceptionArgument argument)
@@ -42,9 +42,9 @@ namespace System.IO.Pipelines
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static InvalidOperationException GetInvalidOperationException(ExceptionResource resource)
+        public static InvalidOperationException GetInvalidOperationException(ExceptionResource resource, string location = null)
         {
-            return new InvalidOperationException(GetResourceString(resource));
+            return new InvalidOperationException(GetResourceString(resource, location));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -74,7 +74,7 @@ namespace System.IO.Pipelines
             return argument.ToString();
         }
 
-        private static string GetResourceString(ExceptionResource argument)
+        private static string GetResourceString(ExceptionResource argument, string location = null)
         {
             Debug.Assert(Enum.IsDefined(typeof(ExceptionResource), argument),
                 "The enum value is not defined, please check the ExceptionResource Enum.");
@@ -98,15 +98,35 @@ namespace System.IO.Pipelines
                 case ExceptionResource.NotConsumingToComplete:
                     resourceString = "No ongoing consuming operation to complete.";
                     break;
-                case ExceptionResource.NoConcurrentReads:
-                    resourceString = "Concurrent reads are not supported.";
+                case ExceptionResource.NoConcurrentOperation:
+                    resourceString = "Concurrent reads or flushes are not supported.";
                     break;
                 case ExceptionResource.GetResultNotCompleted:
-                    resourceString = "can't GetResult unless completed";
+                    resourceString = "Can't GetResult unless completed";
                     break;
-
+                case ExceptionResource.NoWritingAllowed:
+                    resourceString = "Writing is not allowed after writer was completed";
+                    break;
+                case ExceptionResource.NoReadingAllowed:
+                    resourceString = "Reading is not allowed after reader was completed";
+                    break;
+                case ExceptionResource.CompleteWriterActiveProducer:
+                    resourceString = "Can't complete writer while producer operation is ongoing.";
+                    break;
+                case ExceptionResource.CompleteReaderActiveConsumer:
+                    resourceString = "Can't complete reader while consuming operation is ongoing.";
+                    break;
             }
-            return resourceString ?? $"Error ResourceKey not defined {argument}.";
+
+            resourceString = resourceString ?? $"Error ResourceKey not defined {argument}.";
+
+            if (location != null)
+            {
+                resourceString += Environment.NewLine;
+                resourceString += "From: " + location.Replace("at ", ">> ");
+            }
+
+            return resourceString;
         }
     }
 
@@ -128,7 +148,11 @@ namespace System.IO.Pipelines
         NotProducingToComplete,
         AlreadyConsuming,
         NotConsumingToComplete,
-        NoConcurrentReads,
-        GetResultNotCompleted
+        NoConcurrentOperation,
+        GetResultNotCompleted,
+        NoWritingAllowed,
+        NoReadingAllowed,
+        CompleteWriterActiveProducer,
+        CompleteReaderActiveConsumer
     }
 }

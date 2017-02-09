@@ -35,10 +35,10 @@ namespace System.Text.Http
         public ReadOnlyBytes Verb => Bytes.Slice(_verb);
         public ReadOnlyBytes Path => Bytes.Slice(_path);
         public ReadOnlyBytes Version => Bytes.Slice(_version);
-
         public HttpHeaders Headers => _headers;
-
-        public int Body => _bodyIndex;
+        public ReadOnlyBytes Body => Bytes.Slice(_bodyIndex);
+        
+        public int BodyIndex => _bodyIndex;
 
         public static HttpRequest Parse(ReadOnlyBytes bytes)
         {
@@ -90,7 +90,7 @@ namespace System.Text.Http
 
         public int? Length => null;
 
-        public bool TryGet(ref Position position, out HttpHeader value, bool advance = false)
+        public bool TryGet(ref Position position, out HttpHeader value, bool advance = true)
         {
             var bytes = _headers.Slice(position.IntegerPosition);
             if (bytes.Length == 0)

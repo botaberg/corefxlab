@@ -1,36 +1,32 @@
-﻿using System.Runtime;
+﻿using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace System.Runtime
-{
-    public enum ReferenceCountingMethod {
-        Interlocked,
-        ReferenceCounter,
-        None
-    };
-
-    public class ReferenceCountingSettings {
-        public static ReferenceCountingMethod OwnedMemory = ReferenceCountingMethod.Interlocked;
-    }
-}
-
 namespace System.Buffers
 {
-    public abstract class OwnedMemory<T> : IDisposable, IMemory<T>
+    public abstract class OwnedMemory<T> : IDisposable, IKnown
     {
         static long _nextId = InitializedId + 1;
-        const long InitializedId = long.MinValue;
-        const long FreedId = long.MinValue + 1;
+        const int InitializedId = int.MinValue;
+        const int FreedId = int.MinValue + 1;
+
+        T[] _array;
+        int _arrayIndex;
+        int _length;
+
+        IntPtr _pointer;
+
         int _referenceCount;
+        int _id;
 
-        private long _id;
+        public int Length => _length;
 
-        public int Length { get; private set; }
-        protected long Id { get { return _id; } }
-        protected T[] Array { get; private set; }
-        protected IntPtr Pointer { get; private set; }
-        protected int Offset { get; private set; }
+        protected int Id => _id;
+        protected T[] Array => _array;
+        protected IntPtr Pointer => _pointer;
+        protected int Offset => _arrayIndex;
+
         public bool HasOutstandingReferences { 
             get { 
                 return _referenceCount != 0 
@@ -49,13 +45,16 @@ namespace System.Buffers
             Initialize(array, arrayOffset, length, pointer);
         }
 
-        public Memory<T> Memory => new Memory<T>(this, Id);
+        public Memory<T> Memory => new Memory<T>(this, Id, 0, Length);
+        public ReadOnlyMemory<T> ReadOnlyMemory => new ReadOnlyMemory<T>(this, Id, 0, Length);
+
         public Span<T> Span
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get {
-                if (Array != null)
-                    return Array.Slice(Offset, Length);
+                var array = Array;
+                if (array != null)
+                    return new Span<T>(array, _arrayIndex, _length);
                 else unsafe {
                     return new Span<T>(Pointer.ToPointer(), Length);
                 }
@@ -89,17 +88,17 @@ namespace System.Buffers
         #region Lifetime Management
         protected void Initialize(T[] array, int arrayOffset, int length, IntPtr pointer = default(IntPtr))
         {
-            Contract.Requires(array != null || pointer != null);
+            Contract.Requires(array != null || pointer != IntPtr.Zero);
             Contract.Requires(array == null || arrayOffset + length <= array.Length);
             if (!IsDisposed && Id!=InitializedId) {
                 throw new InvalidOperationException("this instance has to be disposed to initialize");
             }
 
-            _id = Interlocked.Increment(ref _nextId);
-            Array = array;
-            Offset = arrayOffset;
-            Length = length;
-            Pointer = pointer;
+            _id = (int)Interlocked.Increment(ref _nextId);
+            _array = array;
+            _arrayIndex = arrayOffset;
+            _length = length;
+            _pointer = pointer;
             _referenceCount = 0;
         }
 
@@ -108,10 +107,10 @@ namespace System.Buffers
             Interlocked.Exchange(ref _id,  FreedId);
             if (HasOutstandingReferences) throw new InvalidOperationException("outstanding references detected.");
             Dispose(true);
-            Array = null;
-            Pointer = IntPtr.Zero;
-            Length = 0;
-            Offset = 0;
+            _array = null;
+            _pointer = IntPtr.Zero;
+            _length = 0;
+            _arrayIndex = 0;
         }
 
         protected virtual void Dispose(bool disposing)
@@ -132,8 +131,6 @@ namespace System.Buffers
 
         protected virtual void OnZeroReferences()
         { }
-
-
         #endregion
 
         #region Used by Memory<T>
@@ -160,33 +157,50 @@ namespace System.Buffers
             return TryGetPointerCore(out pointer);
         }
 
-        unsafe bool IMemory<T>.TryGetPointer(long id, out void* pointer)
-        {
-            return TryGetPointerInternal(id, out pointer);
-        }
-
         internal bool TryGetArrayInternal(long id, out ArraySegment<T> buffer)
         {
             VerifyId(id);
             return TryGetArrayCore(out buffer);
         }
 
-        bool IMemory<T>.TryGetArray(long id, out ArraySegment<T> buffer)
-        {
-            return TryGetArrayInternal(id, out buffer);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Span<T> GetSpanInternal(long id)
+        internal Span<T> GetSpanInternal(long id, int index, int length)
         {
             VerifyId(id);
-            return Span;
+            var array = Array;
+            if (array != null) 
+            {
+                return new Span<T>(array, Offset + index, length);
+            }
+            else
+                unsafe {
+                    if ((uint)index > (uint)Length || (uint)length > (uint)(Length - index))
+                        ThrowArgHelper();
+                    IntPtr newPtr = Add(Pointer, index);
+                    return new Span<T>(newPtr.ToPointer(), length);
+                }
         }
 
+        // TODO: this is taken from SpanHelpers. If we move this type to System.Memory, we should remove this helper
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        Span<T> IMemory<T>.GetSpan(long id)
+        static IntPtr Add(IntPtr start, int index)
         {
-            return GetSpanInternal(id);
+            Debug.Assert(start.ToInt64() >= 0);
+            Debug.Assert(index >= 0);
+
+            unsafe
+            {
+                if (sizeof(IntPtr) == sizeof(int)) {
+                    // 32-bit path.
+                    uint byteLength = (uint)index * (uint)Unsafe.SizeOf<T>();
+                    return (IntPtr)(((byte*)start) + byteLength);
+                }
+                else {
+                    // 64-bit path.
+                    ulong byteLength = (ulong)index * (ulong)Unsafe.SizeOf<T>();
+                    return (IntPtr)(((byte*)start) + byteLength);
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -197,6 +211,10 @@ namespace System.Buffers
         void ThrowIdHelper() {
             throw new ObjectDisposedException(nameof(Memory<T>));
         }
+        void ThrowArgHelper()
+        {
+            throw new ArgumentOutOfRangeException();
+        }
         #endregion
     }
 
@@ -204,14 +222,6 @@ namespace System.Buffers
     {
         void AddReference(long id);
         void Release(long id);
-    }
-
-    internal interface IMemory<T> : IKnown
-    {
-        Span<T> GetSpan(long id);
-
-        bool TryGetArray(long id, out ArraySegment<T> buffer);
-        unsafe bool TryGetPointer(long id, out void* pointer);
     }
 
     public struct DisposableReservation<T> : IDisposable
@@ -251,5 +261,18 @@ namespace System.Buffers
             }
             _owner = null;
         }
+    }
+}
+
+namespace System.Runtime
+{
+    public enum ReferenceCountingMethod {
+        Interlocked,
+        ReferenceCounter,
+        None
+    };
+
+    public class ReferenceCountingSettings {
+        public static ReferenceCountingMethod OwnedMemory = ReferenceCountingMethod.Interlocked;
     }
 }

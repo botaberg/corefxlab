@@ -1,22 +1,21 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Pipelines.File
 {
-    public class FileReader : PipelineReader
+    public class FileReader : PipeReader
     {
         public FileReader(MemoryPool pool) : base(pool)
         {
         }
 
-        public FileReader(Pipe pipe) : base(pipe)
+        public FileReader(IPipe pipe) : base(pipe)
         {
         }
 
@@ -30,7 +29,7 @@ namespace System.IO.Pipelines.File
 
             var readOperation = new ReadOperation
             {
-                Writer = _pipe,
+                Writer = Pipe.Writer,
                 FileHandle = fileHandle,
                 ThreadPoolBoundHandle = handle,
                 IOCallback = IOCallback
@@ -39,7 +38,7 @@ namespace System.IO.Pipelines.File
             var overlapped = new PreAllocatedOverlapped(IOCallback, readOperation, null);
             readOperation.PreAllocatedOverlapped = overlapped;
 
-            _pipe.ReadingStarted.ContinueWith((t, state) =>
+            Task.Factory.StartNew(state =>
             {
                 ((ReadOperation)state).Read();
             },
@@ -58,23 +57,38 @@ namespace System.IO.Pipelines.File
             var buffer = operation.BoxedBuffer.Value;
 
             buffer.Advance((int)numBytes);
-            var task = buffer.FlushAsync();
+            var awaitable = buffer.FlushAsync();
 
-            if (numBytes == 0 || operation.Writer.Writing.IsCompleted)
+            if (numBytes == 0)
             {
                 operation.Writer.Complete();
 
                 // The operation can be disposed when there's nothing more to produce
                 operation.Dispose();
             }
-            else if (task.IsCompleted)
+            else if (awaitable.IsCompleted)
+            {
+                // No back pressure being applied to continue reading
+                operation.Read();
+            }
+            else
+            {
+                var ignore = Continue(awaitable, operation);
+            }
+        }
+
+        private static async Task Continue(WritableBufferAwaitable awaitable, ReadOperation operation)
+        {
+            // Keep reading once we get the completion
+            if (await awaitable)
             {
                 operation.Read();
             }
             else
             {
-                // Keep reading once we get the completion
-                task.ContinueWith((t, s) => ((ReadOperation)s).Read(), operation);
+                operation.Writer.Complete();
+
+                operation.Dispose();
             }
         }
 
@@ -89,7 +103,7 @@ namespace System.IO.Pipelines.File
 
             public unsafe NativeOverlapped* Overlapped { get; set; }
 
-            public IPipelineWriter Writer { get; set; }
+            public IPipeWriter Writer { get; set; }
 
             public StrongBox<WritableBuffer> BoxedBuffer { get; set; }
 

@@ -37,16 +37,16 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task TakeTraversesSegments()
         {
-            using (var factory = new PipelineFactory())
+            using (var factory = new PipeFactory())
             {
                 var readerWriter = factory.Create();
-                var w = readerWriter.Alloc();
+                var w = readerWriter.Writer.Alloc();
                 w.Append(ReadableBuffer.Create(new byte[] { 1 }, 0, 1));
                 w.Append(ReadableBuffer.Create(new byte[] { 2 }, 0, 1));
                 w.Append(ReadableBuffer.Create(new byte[] { 3 }, 0, 1));
                 await w.FlushAsync();
 
-                var result = await readerWriter.ReadAsync();
+                var result = await readerWriter.Reader.ReadAsync();
                 var buffer = result.Buffer;
                 var reader = new ReadableBufferReader(buffer);
 
@@ -60,15 +60,15 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task PeekTraversesSegments()
         {
-            using (var factory = new PipelineFactory())
+            using (var factory = new PipeFactory())
             {
                 var readerWriter = factory.Create();
-                var w = readerWriter.Alloc();
+                var w = readerWriter.Writer.Alloc();
                 w.Append(ReadableBuffer.Create(new byte[] { 1 }, 0, 1));
                 w.Append(ReadableBuffer.Create(new byte[] { 2 }, 0, 1));
                 await w.FlushAsync();
 
-                var result = await readerWriter.ReadAsync();
+                var result = await readerWriter.Reader.ReadAsync();
                 var buffer = result.Buffer;
                 var reader = new ReadableBufferReader(buffer);
 
@@ -83,15 +83,15 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task PeekWorkesWithEmptySegments()
         {
-            using (var factory = new PipelineFactory())
+            using (var factory = new PipeFactory())
             {
                 var readerWriter = factory.Create();
-                var w = readerWriter.Alloc();
+                var w = readerWriter.Writer.Alloc();
                 w.Append(ReadableBuffer.Create(new byte[] { 0 }, 0, 0));
                 w.Append(ReadableBuffer.Create(new byte[] { 1 }, 0, 1));
                 await w.FlushAsync();
 
-                var result = await readerWriter.ReadAsync();
+                var result = await readerWriter.Reader.ReadAsync();
                 var buffer = result.Buffer;
                 var reader = new ReadableBufferReader(buffer);
 
@@ -110,5 +110,26 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(-1, reader.Peek());
             Assert.Equal(-1, reader.Take());
         }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(5, 5)]
+        [InlineData(10, 10)]
+        [InlineData(11, int.MaxValue)]
+        [InlineData(12, int.MaxValue)]
+        [InlineData(15, int.MaxValue)]
+        public void ReturnsCorrectCursor(int takes, int slice)
+        {
+            var readableBuffer = ReadableBuffer.Create(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 0, 10);
+            var reader = new ReadableBufferReader(readableBuffer);
+            for (int i = 0; i < takes; i++)
+            {
+                reader.Take();
+            }
+
+            var expected = slice == int.MaxValue ? readableBuffer.End : readableBuffer.Slice(slice).Start;
+            Assert.Equal(expected, reader.Cursor);
+        }
     }
+
 }

@@ -10,16 +10,12 @@ namespace System
     [DebuggerTypeProxy(typeof(MemoryDebuggerView<>))]
     public struct Memory<T> : IEquatable<Memory<T>>, IEquatable<ReadOnlyMemory<T>>
     {
-        OwnedMemory<T> _owner;
-        long _id;
-        int _index;
-        int _length;
+        readonly OwnedMemory<T> _owner;
+        readonly int _id;
+        readonly int _index;
+        readonly int _length;
 
-        internal Memory(OwnedMemory<T> owner, long id)
-            : this(owner, id, 0, owner.GetSpanInternal(id).Length)
-        { }
-
-        private Memory(OwnedMemory<T> owner, long id, int index, int length)
+        internal Memory(OwnedMemory<T> owner, int id, int index, int length)
         {
             _owner = owner;
             _id = id;
@@ -53,7 +49,7 @@ namespace System
             return new Memory<T>(_owner, _id, _index + index, length);
         }
 
-        public Span<T> Span => _owner.GetSpanInternal(_id).Slice(_index, _length);
+        public Span<T> Span => _owner.GetSpanInternal(_id, _index, _length);
 
         public DisposableReservation<T> Reserve() => new DisposableReservation<T>(_owner, _id);
 
@@ -123,7 +119,7 @@ namespace System
         }
         public static bool operator!=(Memory<T> left, Memory<T> right)
         {
-            return left.Equals(right);
+            return !left.Equals(right);
         }
         public static bool operator ==(Memory<T> left, ReadOnlyMemory<T> right)
         {
@@ -131,7 +127,7 @@ namespace System
         }
         public static bool operator !=(Memory<T> left, ReadOnlyMemory<T> right)
         {
-            return left.Equals(right);
+            return !left.Equals(right);
         }
 
         [EditorBrowsable( EditorBrowsableState.Never)]

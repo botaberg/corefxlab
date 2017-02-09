@@ -227,7 +227,7 @@ namespace System.Threading.Tasks.Channels.Tests
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(10000)]
-        public void SingleProducerConsumer_ConcurrentReadWrite_Success(int bufferedCapacity)
+        public void SingleProducerConsumer_ConcurrentReadWrite_WithBufferedCapacity_Success(int bufferedCapacity)
         {
             Channel<int> c = Channel.CreateBounded<int>(bufferedCapacity);
 
@@ -253,7 +253,7 @@ namespace System.Threading.Tasks.Channels.Tests
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(10000)]
-        public void ManyProducerConsumer_ConcurrentReadWrite_Success(int bufferedCapacity)
+        public void ManyProducerConsumer_ConcurrentReadWrite_WithBufferedCapacity_Success(int bufferedCapacity)
         {
             Channel<int> c = Channel.CreateBounded<int>(bufferedCapacity);
 

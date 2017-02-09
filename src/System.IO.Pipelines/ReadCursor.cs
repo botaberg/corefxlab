@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -77,17 +75,21 @@ namespace System.IO.Pipelines
             {
                 return 0;
             }
+            return GetLength(_segment, _index, end._segment, end._index);
+        }
 
-            var segment = _segment;
-            var index = _index;
+        internal static int GetLength(BufferSegment start, int startIndex, BufferSegment end, int endIndex)
+        {
+            var segment = start;
+            var index = startIndex;
             var length = 0;
             checked
             {
                 while (true)
                 {
-                    if (segment == end._segment)
+                    if (segment == end)
                     {
-                        return length + end._index - index;
+                        return length + endIndex - index;
                     }
                     else if (segment.Next == null)
                     {
@@ -103,59 +105,60 @@ namespace System.IO.Pipelines
             }
         }
 
-        internal ReadCursor Seek(int bytes, ReadCursor end)
+        internal ReadCursor Seek(int bytes, ReadCursor end, bool checkEndReachable = true)
         {
             if (IsEnd)
             {
                 return this;
             }
 
-            var following = _segment.End - _index;
-
             ReadCursor cursor;
-            if (following >= bytes)
+            if (_segment == end._segment && end._index - _index >= bytes)
             {
                 cursor = new ReadCursor(Segment, _index + bytes);
             }
             else
             {
-                cursor = SeekMultiSegment(bytes, following);
+                cursor = SeekMultiSegment(bytes, end, checkEndReachable);
             }
 
-            end.BoundsCheck(cursor);
             return cursor;
         }
 
-        private ReadCursor SeekMultiSegment(int bytes, int following)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private ReadCursor SeekMultiSegment(int bytes, ReadCursor end, bool checkEndReachable)
         {
-            var wasLastSegment = _segment.Next == null;
-            var segment = _segment;
-            var index = _index;
-            while (true)
+            ReadCursor result = default(ReadCursor);
+            bool foundResult = false;
+
+            foreach (var segmentPart in new SegmentEnumerator(this, end))
             {
-                if (wasLastSegment)
+                // We need to loop up until the end to make sure start and end are connected
+                // if end is not trusted
+                if (!foundResult)
                 {
-                    if (bytes != following)
+                    if (segmentPart.Length >= bytes)
                     {
-                        ThrowOutOfBoundsException();
+                        result = new ReadCursor(segmentPart.Segment, segmentPart.Start + bytes);
+                        foundResult = true;
+                        if (!checkEndReachable)
+                        {
+                            break;
+                        }
                     }
-                    return new ReadCursor(segment, index + following);
-                }
-                else
-                {
-                    bytes -= following;
-                    segment = segment.Next;
-                    index = segment.Start;
+                    else
+                    {
+                        bytes -= segmentPart.Length;
+                    }
                 }
 
-                wasLastSegment = segment.Next == null;
-                following = segment.End - index;
-
-                if (following >= bytes)
-                {
-                    return new ReadCursor(segment, index + bytes);
-                }
             }
+            if (!foundResult)
+            {
+                ThrowOutOfBoundsException();
+            }
+
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -307,10 +310,10 @@ namespace System.IO.Pipelines
 
         internal bool IsReachable(ReadCursor other)
         {
-            var current = other.Segment;
+            var current = other._segment;
             while (current != null)
             {
-                if (current == Segment)
+                if (current == _segment)
                 {
                     return true;
                 }
