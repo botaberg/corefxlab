@@ -259,72 +259,94 @@ namespace System.Text
                     }
                     byte nextCharacter;
                     byte nextDigit;
+                    uint parsedValue = 0;
 
                     // Cache s_hexLookup in order to avoid static constructor checks
                     byte[] hexLookup = s_HexLookup;
 
-                    // Parse the first digit separately. If invalid here, we need to return false.
-                    nextCharacter = text[0];
-                    nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
-                    {
-                        bytesConsumed = 0;
-                        value = default(byte);
-                        return false;
-                    }
-                    uint parsedValue = nextDigit;
-
-                    if (text.Length <= ByteOverflowLengthHex)
-                    {
-                        // Length is less than or equal to ByteOverflowLengthHex; overflow is not possible
-                        for (int index = 1; index < text.Length; index++)
-                        {
-                            nextCharacter = text[index];
-                            nextDigit = hexLookup[nextCharacter];
-                            if (nextDigit == 0xFF)
-                            {
-                                bytesConsumed = index;
-                                value = (byte)(parsedValue);
-                                return true;
-                            }
-                            parsedValue = (parsedValue << 4) + nextDigit;
-                        }
-                    }
-                    else
+                    if (text.Length > ByteOverflowLengthHex)
                     {
                         // Length is greater than ByteOverflowLengthHex; overflow is only possible after ByteOverflowLengthHex
                         // digits. There may be no overflow after ByteOverflowLengthHex if there are leading zeroes.
-                        for (int index = 1; index < ByteOverflowLengthHex; index++)
+                        return TryParseByteOverflowHelper(text, out value, out bytesConsumed);
+                    }
+
+                    // Length is less than or equal to ByteOverflowLengthHex; overflow is not possible
+                    for (int index = 0; index < text.Length; index++)
+                    {
+                        nextCharacter = text[index];
+                        nextDigit = hexLookup[nextCharacter];
+                        if (nextDigit == 0xFF)
                         {
-                            nextCharacter = text[index];
-                            nextDigit = hexLookup[nextCharacter];
-                            if (nextDigit == 0xFF)
-                            {
-                                bytesConsumed = index;
-                                value = (byte)(parsedValue);
-                                return true;
-                            }
-                            parsedValue = (parsedValue << 4) + nextDigit;
-                        }
-                        for (int index = ByteOverflowLengthHex; index < text.Length; index++)
-                        {
-                            nextCharacter = text[index];
-                            nextDigit = hexLookup[nextCharacter];
-                            if (nextDigit == 0xFF)
-                            {
-                                bytesConsumed = index;
-                                value = (byte)(parsedValue);
-                                return true;
-                            }
-                            // If we try to append a digit to anything larger than byte.MaxValue / 0x10, there will be overflow
-                            if (parsedValue > byte.MaxValue / 0x10)
+                            if (index == 0)
                             {
                                 bytesConsumed = 0;
                                 value = default(byte);
                                 return false;
                             }
-                            parsedValue = (parsedValue << 4) + nextDigit;
+                            else
+                            {
+                                bytesConsumed = index;
+                                value = (byte)(parsedValue);
+                                return true;
+                            }
                         }
+                        parsedValue = (parsedValue << 4) + nextDigit;
+                    }
+
+                    bytesConsumed = text.Length;
+                    value = (byte)(parsedValue);
+                    return true;
+                }
+
+                private static bool TryParseByteOverflowHelper(ReadOnlySpan<byte> text, out byte value, out int bytesConsumed)
+                {
+                    byte nextCharacter;
+                    byte nextDigit;
+                    uint parsedValue = 0;
+
+                    // Cache s_hexLookup in order to avoid static constructor checks
+                    byte[] hexLookup = s_HexLookup;
+                    
+                    for (int index = 0; index < ByteOverflowLengthHex; index++)
+                    {
+                        nextCharacter = text[index];
+                        nextDigit = hexLookup[nextCharacter];
+                        if (nextDigit == 0xFF)
+                        {
+                            if (index == 0)
+                            {
+                                bytesConsumed = 0;
+                                value = default(byte);
+                                return false;
+                            }
+                            else
+                            {
+                                bytesConsumed = index;
+                                value = (byte)(parsedValue);
+                                return true;
+                            }
+                        }
+                        parsedValue = (parsedValue << 4) + nextDigit;
+                    }
+                    for (int index = ByteOverflowLengthHex; index < text.Length; index++)
+                    {
+                        nextCharacter = text[index];
+                        nextDigit = hexLookup[nextCharacter];
+                        if (nextDigit == 0xFF)
+                        {
+                            bytesConsumed = index;
+                            value = (byte)(parsedValue);
+                            return true;
+                        }
+                        // If we try to append a digit to anything larger than byte.MaxValue / 0x10, there will be overflow
+                        if (parsedValue > byte.MaxValue / 0x10)
+                        {
+                            bytesConsumed = 0;
+                            value = default(byte);
+                            return false;
+                        }
+                        parsedValue = (parsedValue << 4) + nextDigit;
                     }
 
                     bytesConsumed = text.Length;

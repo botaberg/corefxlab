@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\System.Text.Primitives\System.Text.Primitives.csproj" />
   </ItemGroup>
 
 </Project>

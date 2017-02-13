@@ -251,17 +251,17 @@
             {
                 return -1;
             }
-            
-            if (scan + 2 > buffer.Length)
+
+            if (scan > buffer.Length - 2)
             {
                 return -1;
             }
-            
+
             byte value;
             int bytesConsumed;
             bool result = PrimitiveParser.InvariantUtf8.Hex.TryParseByte(buffer.Slice(scan, 2), out value, out bytesConsumed);
 
-            if (result == false || bytesConsumed != 2)
+            if (!result || bytesConsumed != 2)
             {
                 return -1;
             }
